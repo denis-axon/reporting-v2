@@ -1,24 +1,20 @@
 package converter
 
 import (
+	"os"
+
 	"github.com/mandolyte/mdtopdf"
-	"io/ioutil"
-	"log"
 )
 
 // MarkdownToPDF converts a markdown file to a PDF
 func MarkdownToPDF(inputFile string, outputFile string) error {
 	// Read the markdown file
-	data, err := ioutil.ReadFile(inputFile)
+	data, err := os.ReadFile(inputFile)
 	if err != nil {
 		return err
 	}
 
-	// Convert to PDF
-	err = md2pdf.Convert(data, outputFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// Create a PDF renderer and process the markdown content
+	pf := mdtopdf.NewPdfRenderer("portrait", "A4", outputFile, "", nil, mdtopdf.LIGHT)
+	return pf.Process(data)
 }
