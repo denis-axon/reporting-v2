@@ -1,35 +1,42 @@
 # Markdown to PDF Converter
 
 ## Overview
-This project provides a command-line tool to convert Markdown files into PDF format, enabling users to create high-quality PDFs from their Markdown documentation easily.
+This project provides a command-line tool written in Go to convert Markdown files into PDF format, enabling users to create high-quality PDFs from their Markdown documentation easily. It uses [goldmark](https://github.com/yuin/goldmark) for Markdown parsing and [mandolyte/mdtopdf](https://github.com/mandolyte/mdtopdf) for PDF generation.
 
 ## Features
 - Convert Markdown (.md) files to PDF.
 - Supports various Markdown syntax.
 - Customizable PDF formatting options.
+- Built with Go for fast, dependency-free binaries.
 
 ## Installation
 To install the Markdown to PDF Converter, follow these steps:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/owner/reporting-v2.git
+   git clone https://github.com/denis-axon/reporting-v2.git
    cd reporting-v2
    ```
-2. Install the required dependencies:
+2. Install the required dependencies and build the binary:
    ```bash
-   npm install
+   go mod tidy
+   go build -o reporting-v2 .
    ```
 
 ## Usage
 To convert a Markdown file to PDF, run the following command:
 ```bash
-node convert.js <input_file.md> <output_file.pdf>
+./reporting-v2 <input_file.md> <output_file.pdf>
+```
+
+Alternatively, you can run without building first:
+```bash
+go run main.go <input_file.md> <output_file.pdf>
 ```
 
 ### Example
 ```bash
-node convert.js README.md output.pdf
+./reporting-v2 README.md output.pdf
 ```
 
 ## Options
