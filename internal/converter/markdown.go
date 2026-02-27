@@ -1,7 +1,7 @@
 package converter
 
 import (
-	"github.com/solworktech/md2pdf"
+	"github.com/mandolyte/mdtopdf"
 	"io/ioutil"
 	"log"
 )
