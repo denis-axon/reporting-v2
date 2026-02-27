@@ -4,33 +4,29 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"github.com/ledongthuc/pdf"
+	"github.com/jung-kurt/gofpdf"
 )
 
 func main() {
-	// Define command line flags
-	markdownFile := flag.String("input", "input.md", "Path to the input markdown file")
-	pdfFile := flag.String("output", "output.pdf", "Path to the output PDF file")
+	title := flag.String("title", "Default Title", "Title of the PDF document")
+	author := flag.String("author", "Default Author", "Author of the document")
+	theme := flag.String("theme", "default", "Theme of the document")
+
 	flag.Parse()
 
-	// Read the markdown file
-	content, err := os.ReadFile(*markdownFile)
-	if err != nil {
-		fmt.Println("Error reading markdown file:", err)
-		return
+	doc := gofpdf.New("P", "mm", "A4", "")
+	doc.SetFont("Arial", "B", 16)
+	doc.AddPage()
+	doc.Cell(40, 10, *title)
+
+	if *theme == "dark" {
+		doc.SetFillColor(0, 0, 0)
+		doc.SetTextColor(255, 255, 255)
+	} else {
+		doc.SetFillColor(255, 255, 255)
+		doc.SetTextColor(0, 0, 0)
 	}
 
-	// Convert markdown to PDF
-	pdf := pdf.NewPDFWriter()
-	pdf.AddPage()
-	page := pdf.GetPage(1)
-	page.DrawText(10, 10, string(content))
-
-	// Save the PDF to file
-	err = pdf.WriteFile(*pdfFile)
-	if err != nil {
-		fmt.Println("Error writing PDF file:", err)
-	}
-
-	fmt.Printf("Converted %s to %s successfully!\n", *markdownFile, *pdfFile)
+	doc.Cell(40, 10, fmt.Sprintf("Author: %s", *author))
+	doc.OutputFileAndClose("output.pdf")
 }
