@@ -1,9 +1,8 @@
 module github.com/denis-axon/reporting-v2
 
-// Requires Go 1.17 or later
-
-go 1.17
+go 1.16
 
 require (
-	// Add any dependencies here
+	...
+	github.com/solworktech/md2pdf/v2 v2.0.0
 )
