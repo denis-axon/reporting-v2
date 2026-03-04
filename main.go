@@ -9,28 +9,44 @@ import (
 )
 
 func main() {
-	orgId := "testorg1"
-	cl, err := axonserver.GetClusters(orgId)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting clusters for org %s: %v\n", orgId, err)
-		os.Exit(1)
-	}
-	fmt.Printf("Clusters for org %s: %+v\n", orgId, cl)
-	fmt.Printf("Successfully fetched clusters for org %s\n", orgId)
-	os.Exit(0)
+	fmt.Fprintf(os.Stderr, "First arg: %s, second arg: %s\n", os.Args[0], os.Args[1])
 
-	if len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <input_file.md> <output_file.pdf>\n", os.Args[0])
+	// validate args
+	if len(os.Args) < 2 {
+		fmt.Fprintf(os.Stderr, "No args provided\n")
 		os.Exit(1)
 	}
 
-	inputFile := os.Args[1]
-	outputFile := os.Args[2]
-
-	if err := converter.MarkdownToPDF(inputFile, outputFile); err != nil {
-		fmt.Fprintf(os.Stderr, "Error converting %s to PDF: %v\n", inputFile, err)
-		os.Exit(1)
+	// fetch clusters for org if only 1 arg provided, otherwise convert markdown to PDF if 2 args provided
+	if len(os.Args) == 2 {
+		orgId := os.Args[1]
+		cl, err := axonserver.GetClusters(orgId)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting clusters for org %s: %v\n", orgId, err)
+			os.Exit(1)
+		}
+		fmt.Printf("Clusters for org %s: %+v\n", orgId, cl)
+		fmt.Printf("Successfully fetched clusters for org %s\n", orgId)
+		os.Exit(0)
 	}
 
-	fmt.Printf("Successfully converted %s to %s\n", inputFile, outputFile)
+	// if we have 2 args, convert markdown to PDF
+	if len(os.Args) == 3 {
+		inputFile := os.Args[1]
+		outputFile := os.Args[2]
+
+		if err := converter.MarkdownToPDF(inputFile, outputFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error converting %s to PDF: %v\n", inputFile, err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Successfully converted %s to %s\n", inputFile, outputFile)
+		os.Exit(0)
+	}
+
+	// if we have more than 2 args, print usage and exit
+	fmt.Fprintf(os.Stderr, "Invalid number of arguments. Usage:\n")
+	fmt.Fprintf(os.Stderr, "  %s <orgId> - Fetch clusters for the given org\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s <input.md> <output.pdf> - Convert Markdown to PDF\n", os.Args[0])
+	os.Exit(1)
 }

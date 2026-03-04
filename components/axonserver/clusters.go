@@ -17,22 +17,6 @@ type ClusterInfo struct {
 	Version string `json:"version"`
 }
 
-// func GetClusters(org string) ([]ClusterInfo, error) {
-// 	ck := cacheKey(org)
-// 	v, err := kvstore.Get(ck)
-// 	if err == nil {
-// 		var clusters []ClusterInfo
-// 		err2 := json.Unmarshal([]byte(v), &clusters)
-// 		if err2 != nil {
-// 			log.Warn("Failed to unmarshal cluster info from cache for org " + org + ": " + err2.Error())
-// 		} else {
-// 			return clusters, nil
-// 		}
-// 	}
-// 	// Not found in the cache, send an empty response
-// 	return []ClusterInfo{}, nil
-// }
-
 func GetClusters(org string) ([]ClusterInfo, error) {
 	res, err := doApiCall(org, "orgs")
 	if err != nil {
