@@ -1,15 +1,24 @@
-// This is the main entry point for the reporting application
-
 package main
 
 import (
 	"fmt"
 	"os"
 
+	"github.com/denis-axon/reporting-v2/components/axonserver"
 	"github.com/denis-axon/reporting-v2/internal/converter"
 )
 
 func main() {
+	orgId := "testorg1"
+	cl, err := axonserver.GetClusters(orgId)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting clusters for org %s: %v\n", orgId, err)
+		os.Exit(1)
+	}
+	fmt.Printf("Clusters for org %s: %+v\n", orgId, cl)
+	fmt.Printf("Successfully fetched clusters for org %s\n", orgId)
+	os.Exit(0)
+
 	if len(os.Args) != 3 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <input_file.md> <output_file.pdf>\n", os.Args[0])
 		os.Exit(1)
