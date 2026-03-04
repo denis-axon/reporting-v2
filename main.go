@@ -6,9 +6,18 @@ import (
 
 	"github.com/denis-axon/reporting-v2/components/axonserver"
 	"github.com/denis-axon/reporting-v2/internal/converter"
+	// "github.com/denis-axon/reporting-v2/components/cloudapi"
 )
 
 func main() {
+	// test fetching Cloud API
+	// orgs, err := cloudapi.ListOrgs()
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error listing orgs: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Printf("Orgs: %+v\n", orgs)
+
 	fmt.Fprintf(os.Stderr, "First arg: %s, second arg: %s\n", os.Args[0], os.Args[1])
 
 	// validate args

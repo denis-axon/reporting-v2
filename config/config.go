@@ -24,8 +24,13 @@ import (
 type Config struct {
 	ListenAddress string
 
-	// Cloud API authentication token (shared secret with axon-server)
+	// Axon Server authentication token (shared secret with axon-server, used for both regular and SAML modes)
 	AuthToken string
+
+	CloudAPIEndpoint string
+	CloudAPIProxy    string
+	// Cloud API authentication token (shared secret with axon-server)
+	CloudAPIToken string
 
 	// Vault connection details
 	VaultHost     string
@@ -187,10 +192,14 @@ func loadConfigFromEnv() *Config {
 	if err != nil {
 		disableClusterListRefreshBool = false
 	}
-	// AxonServerUrlTemplate
 
 	return &Config{
-		AuthToken:     os.Getenv("AUTH_TOKEN"),
+		AuthToken: os.Getenv("AUTH_TOKEN"),
+
+		CloudAPIToken:    os.Getenv("CLOUD_API_TOKEN"),
+		CloudAPIEndpoint: os.Getenv("CLOUD_API_ENDPOINT"),
+		CloudAPIProxy:    os.Getenv("CLOUD_API_PROXY"),
+
 		ListenAddress: listenAddress,
 
 		VaultHost:     os.Getenv("VAULT_HOST"),
