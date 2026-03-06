@@ -3,6 +3,7 @@ package metrics
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -69,4 +70,33 @@ func Healthy() (error, bool) {
 	}
 
 	return nil, resp.StatusCode == 200
+}
+
+func GetChartImage() ([]byte, error) {
+	c := GetClient()
+	ctx := context.Background()
+	req := client.NewRequest().
+		WithMethod("GET").
+		WithPath("/dashboard/api/dash/chartImage").
+		WithQueryParam("org", "testorg3").
+		WithQueryParam("clusterType", "cassandra").
+		WithQueryParam("cluster", "test41cluster").
+		WithQueryParam("width", "800").
+		WithQueryParam("height", "400").
+		WithQueryParam("timeZone", "Asia/Makassar").
+		WithQueryParam("from", "1772678548").
+		WithQueryParam("to", "1772721748").
+		WithQueryParam("widgetUuid", "c11b97f0-6b2e-40cd-abc6-b721e38778b9").
+		Build()
+
+	resp, err := c.Do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return resp.Data, nil
 }

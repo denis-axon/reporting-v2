@@ -1,7 +1,19 @@
 # Quarterly Report - Q1 2026
 
 ## Summary
+
 This report covers the key metrics and achievements for the first quarter of 2026.
+
+# Cluster Report
+
+## CPU Usage
+{{CHART_CPU}}
+
+## Memory Usage  
+{{CHART_MEMORY}}
+
+## Disk Usage
+{{CHART_DISK}}
 
 ## Key Metrics
 

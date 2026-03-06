@@ -6,6 +6,7 @@ go 1.26
 require (
 	bitbucket.org/digitalisio/axon-metrics-go-client v0.1.0
 	bitbucket.org/digitalisio/go v1.7.2
+	github.com/google/uuid v1.6.0
 	github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5
 	github.com/mandolyte/mdtopdf v1.5.3
 	go.uber.org/zap v1.27.1

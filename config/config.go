@@ -172,7 +172,7 @@ func loadConfigFromEnv() *Config {
 		refreshCloudInstancesCacheBool = true
 	}
 
-	axonServerUrlStr := os.Getenv("AXON_SERVER_URL_SAML_MODE_TEMPLATE_TEST_2")
+	axonServerUrlStr := os.Getenv("AXON_SERVER_URL_SAML_MODE_TEMPLATE")
 	if axonServerUrlStr == "" {
 		// the URL below does not work outside of the k8s
 		// axonServerUrlStr = "http://axonops-axon-server.cst-{{.Org}}:8080/api/v1"
@@ -194,7 +194,7 @@ func loadConfigFromEnv() *Config {
 	}
 
 	return &Config{
-		AuthToken: os.Getenv("AUTH_TOKEN"),
+		AuthToken: os.Getenv("AUTH_TOKEN_TESTORG3"),
 
 		CloudAPIToken:    os.Getenv("CLOUD_API_TOKEN"),
 		CloudAPIEndpoint: os.Getenv("CLOUD_API_ENDPOINT"),

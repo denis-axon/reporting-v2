@@ -1,8 +1,12 @@
 package converter
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/mandolyte/mdtopdf"
 )
 
@@ -24,4 +28,49 @@ func MarkdownToPDF(inputFile string, outputFile string) error {
 	}
 
 	return nil
+}
+
+// ImageData holds image bytes and its placeholder name
+type ImageData struct {
+	Placeholder string // e.g., "{{CHART_1}}", "{{CHART_2}}"
+	Data        []byte
+	Filename    string // e.g., "chart_1.png"
+}
+
+// GeneratePDFWithImages creates a PDF from markdown template with embedded images
+func GeneratePDFWithImages(templatePath string, outputPath string, images []ImageData) error {
+	// Create unique temp directory for this request
+	tempDir := filepath.Join(os.TempDir(), "pdf-gen-"+uuid.New().String())
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tempDir) // Cleanup after PDF generation
+
+	// Read markdown template
+	mdContent, err := os.ReadFile(templatePath)
+	if err != nil {
+		return fmt.Errorf("failed to read template: %w", err)
+	}
+	content := string(mdContent)
+
+	// Save each image and replace placeholder
+	for _, img := range images {
+		imgPath := filepath.Join(tempDir, img.Filename)
+		if err := os.WriteFile(imgPath, img.Data, 0644); err != nil {
+			return fmt.Errorf("failed to write image %s: %w", img.Filename, err)
+		}
+		// Replace placeholder with markdown image reference
+		mdImage := fmt.Sprintf("![%s](%s)", img.Filename, imgPath)
+		content = strings.Replace(content, img.Placeholder, mdImage, 1)
+	}
+
+	// Write processed markdown to temp file
+	tempMdPath := filepath.Join(tempDir, "report.md")
+	if err := os.WriteFile(tempMdPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write temp markdown: %w", err)
+	}
+
+	// Generate PDF
+	pf := mdtopdf.NewPdfRenderer("P", "A4", outputPath, "", nil, mdtopdf.LIGHT)
+	return pf.Process([]byte(content))
 }
