@@ -16,6 +16,7 @@ func doApiCall(org, apiCall string) ([]byte, error) {
 	}
 
 	w := bytes.NewBuffer(nil)
+	// TODO: add an ability to switch between Regular and SAML modes URLs based on org settings in Cloud API
 	err := config.GetInstance().AxonServerUrlTemplate.Execute(w, map[string]string{"Org": org})
 	if err != nil {
 		return nil, err

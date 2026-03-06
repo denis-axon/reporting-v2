@@ -6,10 +6,28 @@ import (
 
 	"github.com/denis-axon/reporting-v2/components/axonserver"
 	"github.com/denis-axon/reporting-v2/internal/converter"
+
 	// "github.com/denis-axon/reporting-v2/components/cloudapi"
+	"github.com/denis-axon/reporting-v2/components/metrics"
 )
 
 func main() {
+	err := metrics.Init("testorg1") // Initialize metrics client
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing metrics client: %v\n", err)
+		os.Exit(1)
+	}
+	err, healthy := metrics.Healthy() // Check if metrics client is healthy
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error checking metrics client health: %v\n", err)
+		os.Exit(1)
+	}
+	if !healthy {
+		fmt.Fprintf(os.Stderr, "Metrics client is not healthy\n")
+		os.Exit(1)
+	}
+	fmt.Println("Metrics client is healthy")
+
 	// test fetching Cloud API
 	// orgs, err := cloudapi.ListOrgs()
 	// if err != nil {
@@ -17,8 +35,6 @@ func main() {
 	// 	os.Exit(1)
 	// }
 	// fmt.Printf("Orgs: %+v\n", orgs)
-
-	fmt.Fprintf(os.Stderr, "First arg: %s, second arg: %s\n", os.Args[0], os.Args[1])
 
 	// validate args
 	if len(os.Args) < 2 {

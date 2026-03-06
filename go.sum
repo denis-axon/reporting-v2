@@ -1,3 +1,5 @@
+bitbucket.org/digitalisio/axon-metrics-go-client v0.1.0 h1:9ydF7qXJJsmSeU36e5VJ5uejaymMIQGmpYsxQU3PBQo=
+bitbucket.org/digitalisio/axon-metrics-go-client v0.1.0/go.mod h1:pnvPyjtoh8sw7G3FCQMH9UqoEsbRbnAkpm76HxA7MNY=
 bitbucket.org/digitalisio/go v1.7.2 h1:gUhR8MpdiYWyvn2yZXzHXALUhKQr2X/4euCEmhSBHrg=
 bitbucket.org/digitalisio/go v1.7.2/go.mod h1:sju+NLn1EoAbpIrivHqhbfEzb0B151xpg0Uf04hwOLg=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
