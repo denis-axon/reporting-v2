@@ -1,12 +1,13 @@
 # Markdown to PDF Converter
 
 ## Overview
-This project provides a command-line tool to convert Markdown files into PDF format, enabling users to create high-quality PDFs from their Markdown documentation easily.
+This project provides a command-line tool and API server to convert Markdown files into PDF format, enabling users to create high-quality PDFs from their Markdown documentation easily.
 
 ## Features
 - Convert Markdown (.md) files to PDF.
 - Supports various Markdown syntax.
 - Customizable PDF formatting options.
+- HTTP API server for reporting services.
 
 ## Installation
 To install the Markdown to PDF Converter, follow these steps:
@@ -16,26 +17,31 @@ To install the Markdown to PDF Converter, follow these steps:
    git clone https://github.com/owner/reporting-v2.git
    cd reporting-v2
    ```
-2. Install the required dependencies:
+2. Install dependencies and build:
    ```bash
-   npm install
+   go mod download
+   go build -o reporting ./cmd/reporting
    ```
 
 ## Usage
-To convert a Markdown file to PDF, run the following command:
+
+### CLI Tool
+To generate a PDF, run:
 ```bash
-node convert.js <input_file.md> <output_file.pdf>
+./reporting --title "My Document" --author "Your Name"
 ```
 
-### Example
+### API Server
+To start the API server:
 ```bash
-node convert.js README.md output.pdf
+go run main.go
 ```
 
 ## Options
 You can customize the PDF generation by providing optional parameters:
-- `--format`: Specify the format of the output PDF.
-- `--css`: Provide a CSS file for custom styling.
+- `--title`: Title of the PDF document.
+- `--author`: Author of the document.
+- `--theme`: Theme of the document (`default` or `dark`).
 
 ## Contributing
 We welcome contributions! Please submit a pull request or open an issue to discuss changes.
