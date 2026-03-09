@@ -13,17 +13,24 @@ import (
 )
 
 var (
-	clientMu       sync.Mutex
-	clientInstance *client.Client
+	clientMu sync.Mutex
+	clients  = make(map[string]*client.Client)
 )
 
-func GetClient() *client.Client {
+func GetClient(org string) *client.Client {
 	clientMu.Lock()
 	defer clientMu.Unlock()
-	return clientInstance
+	return clients[org]
 }
 
 func Init(org string) error {
+	clientMu.Lock()
+	if _, exists := clients[org]; exists {
+		clientMu.Unlock()
+		return nil
+	}
+	clientMu.Unlock()
+
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
@@ -47,17 +54,20 @@ func Init(org string) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("Metrics client initialized successfully", zap.Any("client", c))
+	logger.Info("Metrics client initialized successfully", zap.String("org", org), zap.Any("client", c))
 
 	clientMu.Lock()
-	clientInstance = c
+	clients[org] = c
 	clientMu.Unlock()
 
 	return nil
 }
 
-func Healthy() (error, bool) {
-	c := GetClient()
+func Healthy(org string) (error, bool) {
+	c := GetClient(org)
+	if c == nil {
+		return fmt.Errorf("metrics client not initialized for org %s", org), false
+	}
 	ctx := context.Background()
 	req := client.NewRequest().
 		WithMethod("GET").
@@ -72,21 +82,24 @@ func Healthy() (error, bool) {
 	return nil, resp.StatusCode == 200
 }
 
-func GetChartImage() ([]byte, error) {
-	c := GetClient()
+func GetChartImage(org string, clusterName string, clusterType string, from string, to string, timeZone string, widgetUuid string) ([]byte, error) {
+	c := GetClient(org)
+	if c == nil {
+		return nil, fmt.Errorf("metrics client not initialized for org %s", org)
+	}
 	ctx := context.Background()
 	req := client.NewRequest().
 		WithMethod("GET").
 		WithPath("/dashboard/api/dash/chartImage").
-		WithQueryParam("org", "testorg3").
-		WithQueryParam("clusterType", "cassandra").
-		WithQueryParam("cluster", "test41cluster").
+		WithQueryParam("org", org).
+		WithQueryParam("cluster", clusterName).
+		WithQueryParam("clusterType", clusterType).
 		WithQueryParam("width", "800").
 		WithQueryParam("height", "400").
-		WithQueryParam("timeZone", "Asia/Makassar").
-		WithQueryParam("from", "1772678548").
-		WithQueryParam("to", "1772721748").
-		WithQueryParam("widgetUuid", "c11b97f0-6b2e-40cd-abc6-b721e38778b9").
+		WithQueryParam("timeZone", timeZone).
+		WithQueryParam("from", from).
+		WithQueryParam("to", to).
+		WithQueryParam("widgetUuid", widgetUuid).
 		Build()
 
 	resp, err := c.Do(ctx, req)

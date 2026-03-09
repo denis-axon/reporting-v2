@@ -2,83 +2,49 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
-	"sync"
+	"os/signal"
+	"syscall"
 
-	"github.com/denis-axon/reporting-v2/components/axonserver"
-	"github.com/denis-axon/reporting-v2/internal/converter"
+	apiv1 "github.com/denis-axon/reporting-v2/api/v1"
+	"github.com/denis-axon/reporting-v2/api/v1/utils"
+	"github.com/denis-axon/reporting-v2/config"
+	"github.com/gin-gonic/gin"
 
 	// "github.com/denis-axon/reporting-v2/components/cloudapi"
-	"encoding/base64"
-	"path/filepath"
-
-	"github.com/denis-axon/reporting-v2/components/metrics"
-	"github.com/google/uuid"
+	log "bitbucket.org/digitalisio/go/logger"
 )
 
-// Convert bytes to base64 markdown image
-func ImageToMarkdown(data []byte, alt string) string {
-	b64 := base64.StdEncoding.EncodeToString(data)
-	return fmt.Sprintf("![%s](data:image/png;base64,%s)", alt, b64)
-}
-
-// func handleGeneratePDF(w http.ResponseWriter, r *http.Request) {
-func handleGeneratePDF() {
-	// Fetch all chart images concurrently
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	var images []converter.ImageData
-
-	chartConfigs := []struct {
-		placeholder string
-		widgetUuid  string
-	}{
-		{"{{CHART_CPU}}", "uuid-1"},
-		{"{{CHART_MEMORY}}", "uuid-2"},
-		{"{{CHART_DISK}}", "uuid-3"},
-	}
-
-	for i, cfg := range chartConfigs {
-		wg.Add(1)
-		go func(idx int, c struct{ placeholder, widgetUuid string }) {
-			defer wg.Done()
-			// data, err := metrics.GetChartImage(c.widgetUuid) // pass widget UUID
-			data, err := metrics.GetChartImage() // pass widget UUID
-			if err != nil {
-				return // handle error appropriately
-			}
-			mu.Lock()
-			images = append(images, converter.ImageData{
-				Placeholder: c.placeholder,
-				Data:        data,
-				Filename:    fmt.Sprintf("chart_%d.png", idx),
-			})
-			mu.Unlock()
-		}(i, cfg)
-	}
-	wg.Wait()
-
-	// Generate PDF with unique output path
-	outputPath := filepath.Join(os.TempDir(), uuid.New().String()+".pdf")
-	err := converter.GeneratePDFWithImages("templates/report.md", outputPath, images)
-	if err != nil {
-		// http.Error(w, err.Error(), 500)
-		fmt.Fprintf(os.Stderr, "Error generating PDF: %v\n", err)
-		return
-	}
-	// defer os.Remove(outputPath)
-
-	// Serve PDF
-	// http.ServeFile(w, r, outputPath)
-	fmt.Printf("PDF generated successfully at %s\n", outputPath)
-}
-
 func main() {
-	err := metrics.Init("testorg3") // Initialize metrics client
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error initializing metrics client: %v\n", err)
-		os.Exit(1)
-	}
+	// Enable pprof on localhost port 6060
+	go func() {
+		_ = http.ListenAndServe("127.0.0.1:6060", nil)
+	}()
+	r := gin.New()
+	setupRoutes(r)
+
+	// Start the HTTP server in the background
+	go func() {
+		err := r.Run(config.GetInstance().ListenAddress) // listen and serve on 0.0.0.0:8081 by default
+		if err != nil {
+			log.Error(fmt.Sprintf("HTTP server exited with error: %s", err.Error()))
+		}
+	}()
+
+	// Wait for an exit signal
+	signalChan := make(chan os.Signal, 1)
+	defer close(signalChan)
+	signal.Notify(signalChan, syscall.SIGTERM, os.Interrupt)
+	s := <-signalChan
+	log.Warn(fmt.Sprintf("captured %v signal, stopping gracefully...", s))
+	signal.Stop(signalChan)
+
+	// err := metrics.Init("testorg3") // Initialize metrics client
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error initializing metrics client: %v\n", err)
+	// 	os.Exit(1)
+	// }
 	// err, healthy := metrics.Healthy() // Check if metrics client is healthy
 	// if err != nil {
 	// 	fmt.Fprintf(os.Stderr, "Error checking metrics client health: %v\n", err)
@@ -96,7 +62,7 @@ func main() {
 	// }
 	// fmt.Printf("Chart image data: %v\n", byteData)
 	// os.WriteFile("chart.png", byteData, 0644)
-	handleGeneratePDF()
+	// handleGeneratePDF()
 
 	// test fetching Cloud API
 	// orgs, err := cloudapi.ListOrgs()
@@ -107,41 +73,71 @@ func main() {
 	// fmt.Printf("Orgs: %+v\n", orgs)
 
 	// validate args
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "No args provided\n")
-		os.Exit(1)
+	// if len(os.Args) < 2 {
+	// 	fmt.Fprintf(os.Stderr, "No args provided\n")
+	// 	os.Exit(1)
+	// }
+
+	// // fetch clusters for org if only 1 arg provided, otherwise convert markdown to PDF if 2 args provided
+	// if len(os.Args) == 2 {
+	// 	orgId := os.Args[1]
+	// 	cl, err := axonserver.GetClusters(orgId)
+	// 	if err != nil {
+	// 		fmt.Fprintf(os.Stderr, "Error getting clusters for org %s: %v\n", orgId, err)
+	// 		os.Exit(1)
+	// 	}
+	// 	fmt.Printf("Clusters for org %s: %+v\n", orgId, cl)
+	// 	fmt.Printf("Successfully fetched clusters for org %s\n", orgId)
+	// 	os.Exit(0)
+	// }
+
+	// // if we have 2 args, convert markdown to PDF
+	// if len(os.Args) == 3 {
+	// 	inputFile := os.Args[1]
+	// 	outputFile := os.Args[2]
+
+	// 	if err := converter.MarkdownToPDF(inputFile, outputFile); err != nil {
+	// 		fmt.Fprintf(os.Stderr, "Error converting %s to PDF: %v\n", inputFile, err)
+	// 		os.Exit(1)
+	// 	}
+
+	// 	fmt.Printf("Successfully converted %s to %s\n", inputFile, outputFile)
+	// 	os.Exit(0)
+	// }
+
+	// // if we have more than 2 args, print usage and exit
+	// fmt.Fprintf(os.Stderr, "Invalid number of arguments. Usage:\n")
+	// fmt.Fprintf(os.Stderr, "  %s <orgId> - Fetch clusters for the given org\n", os.Args[0])
+	// fmt.Fprintf(os.Stderr, "  %s <input.md> <output.pdf> - Convert Markdown to PDF\n", os.Args[0])
+	// os.Exit(1)
+}
+
+func authenticationCheck(c *gin.Context) {
+	fmt.Println("Authentication check!")
+	suppliedToken := c.GetHeader("X-AxonOps-Auth")
+	expectedToken := config.AuthToken()
+	// fmt.Printf("Authentication check: supplied token '%s', expected token '%s'\n", suppliedToken, expectedToken)
+	if suppliedToken != expectedToken {
+		c.JSON(http.StatusUnauthorized, utils.Response{Error: "Unauthorized"})
+		c.Abort()
 	}
+}
 
-	// fetch clusters for org if only 1 arg provided, otherwise convert markdown to PDF if 2 args provided
-	if len(os.Args) == 2 {
-		orgId := os.Args[1]
-		cl, err := axonserver.GetClusters(orgId)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting clusters for org %s: %v\n", orgId, err)
-			os.Exit(1)
-		}
-		fmt.Printf("Clusters for org %s: %+v\n", orgId, cl)
-		fmt.Printf("Successfully fetched clusters for org %s\n", orgId)
-		os.Exit(0)
-	}
+func setupRoutes(r *gin.Engine) {
+	// Health check endpoints
+	r.GET("/healthz", apiv1.HealthCheck)
 
-	// if we have 2 args, convert markdown to PDF
-	if len(os.Args) == 3 {
-		inputFile := os.Args[1]
-		outputFile := os.Args[2]
+	// v1 API
+	v1 := r.Group("/v1")
+	// we don't use authentication for now because we'll need this to work
+	// for both SaaS and on-prem installs and the authentication works differently in these environments
+	// v1.Use(authenticationCheck)
 
-		if err := converter.MarkdownToPDF(inputFile, outputFile); err != nil {
-			fmt.Fprintf(os.Stderr, "Error converting %s to PDF: %v\n", inputFile, err)
-			os.Exit(1)
-		}
+	// Authenticated dummy endpoint
+	v1.GET("/authcheck", apiv1.AuthCheck)
 
-		fmt.Printf("Successfully converted %s to %s\n", inputFile, outputFile)
-		os.Exit(0)
-	}
+	v1.GET("/reporting", apiv1.GeneratePDF)
 
-	// if we have more than 2 args, print usage and exit
-	fmt.Fprintf(os.Stderr, "Invalid number of arguments. Usage:\n")
-	fmt.Fprintf(os.Stderr, "  %s <orgId> - Fetch clusters for the given org\n", os.Args[0])
-	fmt.Fprintf(os.Stderr, "  %s <input.md> <output.pdf> - Convert Markdown to PDF\n", os.Args[0])
-	os.Exit(1)
+	// ensure there is a newline in the output because it doesn't always display correctly and it's annoying!
+	fmt.Println()
 }

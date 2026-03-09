@@ -246,7 +246,7 @@ func loadConfigFromEnv() *Config {
 func AuthToken() string {
 	cfg := GetInstance()
 	if cfg.AuthToken == "" {
-		log.Fatal("No auth token has been set. Restart with the AUTH_TOKEN env var configured.")
+		log.Error("No auth token has been set. Restart with the AUTH_TOKEN env var configured.")
 	}
 	return cfg.AuthToken
 }
