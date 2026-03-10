@@ -1,16 +1,13 @@
 # Cluster Utilization Report
 
-**Organization:** {{ORGANIZATION}}
-
-**Dashboard:** {{DASHBOARD}}
-
-**Report Date Range:**
-- From: {{DATE_FROM}}
-- To: {{DATE_TO}}
-
-**Timezone:** {{TIMEZONE}}
-
-**Report Generated At:** {{GENERATED_AT}}
+| Field | Value |
+|-------|-------|
+| Organization | {{ORGANIZATION}} |
+| Dashboard | {{DASHBOARD}} |
+| Date From | {{DATE_FROM}} |
+| Date To | {{DATE_TO}} |
+| Timezone | {{TIMEZONE}} |
+| Generated At | {{GENERATED_AT}} |
 
 ---
 
