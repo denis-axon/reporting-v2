@@ -1,2 +1,5 @@
 /reporting-v2
 *.DS_Store
+build-errors.log
+*.log
+*.pdf

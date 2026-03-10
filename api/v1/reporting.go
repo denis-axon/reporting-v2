@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/denis-axon/reporting-v2/api/v1/utils"
-	"github.com/denis-axon/reporting-v2/internal/converter"
+	"github.com/denis-axon/reporting-v2/components/converter"
 
 	"path/filepath"
 
@@ -17,8 +17,9 @@ import (
 )
 
 // TOOD: should they be added to env vars?
-var WIDGET_CHART_CPU_UUID = "c11b97f0-6b2e-40cd-abc6-b721e38778b9"
-var WIDGET_CHART_MEMORY_UUID = "c11b97f0-6b2e-40cd-abc6-b721e38778b9"
+// for test41cluster the UUID was c11b97f0-6b2e-40cd-abc6-b721e38778b9
+var WIDGET_CHART_CPU_UUID = "8d6ce9dc-77fe-4576-8b30-7986d8e0bf9b"
+var WIDGET_CHART_MEMORY_UUID = "8d6ce9dc-77fe-4576-8b30-7986d8e0bf9b"
 
 func GeneratePDF(c *gin.Context) {
 	// Get org from query parameter
