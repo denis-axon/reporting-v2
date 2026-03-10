@@ -76,6 +76,7 @@ type Config struct {
 	AuditLogBQTable       string
 
 	AxonServerUrlTemplate     *template.Template
+	AxonServerUrlTemplateSaml *template.Template
 	DisableClusterListRefresh bool
 }
 
@@ -172,19 +173,22 @@ func loadConfigFromEnv() *Config {
 		refreshCloudInstancesCacheBool = true
 	}
 
-	axonServerUrlStr := os.Getenv("AXON_SERVER_URL_SAML_MODE_TEMPLATE")
+	axonServerUrlStr := os.Getenv("AXON_SERVER_URL_TEMPLATE")
 	if axonServerUrlStr == "" {
-		// the URL below does not work outside of the k8s
-		// axonServerUrlStr = "http://axonops-axon-server.cst-{{.Org}}:8080/api/v1"
-
-		// TODO: add a way to switch between regular and SAML mode URLs
-		// axonServerUrlStr = "https://dash.axonopsdev.com/{{.Org}}/api/v1"
-
-		axonServerUrlStr = "https://{{.Org}}.axonopsdev.com/dashboard/api/v1"
+		axonServerUrlStr = "https://dash.axonopsdev.com/{{.Org}}/api/v1"
 	}
 	axonServerUrlTemplate, err := template.New("url").Parse(axonServerUrlStr)
 	if err != nil {
 		log.Fatal("Error parsing axon-server URL template '" + axonServerUrlStr + "': " + err.Error())
+	}
+
+	axonServerUrlStrSaml := os.Getenv("AXON_SERVER_URL_TEMPLATE_SAML")
+	if axonServerUrlStrSaml == "" {
+		axonServerUrlStrSaml = "https://{{.Org}}.axonopsdev.com/dashboard/api/v1"
+	}
+	axonServerUrlTemplateSaml, err := template.New("url").Parse(axonServerUrlStrSaml)
+	if err != nil {
+		log.Fatal("Error parsing axon-server URL template '" + axonServerUrlStrSaml + "': " + err.Error())
 	}
 
 	disableClusterListRefresh := os.Getenv("DISABLE_CLUSTER_LIST_REFRESH")
@@ -239,6 +243,7 @@ func loadConfigFromEnv() *Config {
 		AuditLogBQDataSet:     auditLogBQDataSet,
 
 		AxonServerUrlTemplate:     axonServerUrlTemplate,
+		AxonServerUrlTemplateSaml: axonServerUrlTemplateSaml, // for now we are using the same template for both regular and SAML modes, but this can be easily changed in the future if needed
 		DisableClusterListRefresh: disableClusterListRefreshBool,
 	}
 }

@@ -38,6 +38,11 @@ type OrgCluster struct {
 	Nodes  int    `json:"nodes"`
 }
 
+type SamlConfigDetails struct {
+	Provider string `json:"provider"`
+	// and other fields but we only need these for now
+}
+
 func ListOrgs() ([]OrganizationDetails, error) {
 	var orgs []OrganizationDetails
 	err := SimpleRequest("/v1/orgs", &orgs)
@@ -54,6 +59,15 @@ func GetOrg(orgId string) (OrganizationDetails, error) {
 		return o, err
 	}
 	return o, nil
+}
+
+func GetSamlConfig(orgId string) (SamlConfigDetails, error) {
+	var c SamlConfigDetails
+	err := SimpleRequest("/v1/orgs/"+orgId+"/samlConfig", &c)
+	if err != nil {
+		return c, err
+	}
+	return c, nil
 }
 
 func DeleteOrg(orgName string) error {

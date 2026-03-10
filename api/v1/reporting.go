@@ -57,7 +57,7 @@ func GeneratePDF(c *gin.Context) {
 	}
 
 	// Initialize metrics client for this org
-	if err := metrics.Init(org); err != nil {
+	if err := metrics.InitClient(org); err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing metrics client: %v\n", err)
 		utils.ReturnError(c, err)
 		return

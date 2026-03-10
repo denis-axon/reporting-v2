@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"bitbucket.org/digitalisio/axon-metrics-go-client/client"
+	"github.com/denis-axon/reporting-v2/components/cloudapi"
 	"github.com/denis-axon/reporting-v2/config"
 	"go.uber.org/zap"
 )
@@ -23,7 +24,7 @@ func GetClient(org string) *client.Client {
 	return clients[org]
 }
 
-func Init(org string) error {
+func InitClient(org string) error {
 	clientMu.Lock()
 	if _, exists := clients[org]; exists {
 		clientMu.Unlock()
@@ -37,16 +38,28 @@ func Init(org string) error {
 	w := bytes.NewBuffer(nil)
 	cfg := config.GetInstance()
 
-	// TODO: add an ability to switch between Regular and SAML modes URLs based on org settings in Cloud API
-	err := cfg.AxonServerUrlTemplate.Execute(w, map[string]string{"Org": org})
+	// switch between Regular and SAML modes URLs based on org settings in Cloud API
+	samlConfig, err := cloudapi.GetSamlConfig(org)
+	if err != nil {
+		logger.Error("Failed to get SAML config for org", zap.String("org", org), zap.Error(err))
+		return err
+	}
+	isSaml := samlConfig.Provider != ""
+	logger.Info("SAML config retrieved", zap.String("org", org), zap.Bool("isSaml", isSaml))
+
+	currentUrlTemplate := cfg.AxonServerUrlTemplate
+	if isSaml {
+		currentUrlTemplate = cfg.AxonServerUrlTemplateSaml
+	}
+	err = currentUrlTemplate.Execute(w, map[string]string{"Org": org})
 	if err != nil {
 		return err
 	}
 
-	baseURl := w.String()
+	baseURL := w.String()
 
 	c, err := client.New(client.Options{
-		BaseURL:   baseURl,
+		BaseURL:   baseURL,
 		AuthToken: "Bearer " + cfg.AuthToken,
 		Timeout:   10 * time.Second,
 		Logger:    logger,
