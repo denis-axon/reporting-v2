@@ -9,7 +9,6 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/gocql/gocql v1.7.0
 	github.com/google/uuid v1.6.0
-	github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5
 	github.com/mandolyte/mdtopdf v1.5.3
 	go.uber.org/zap v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
