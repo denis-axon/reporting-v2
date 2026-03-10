@@ -3,3 +3,4 @@
 build-errors.log
 *.log
 *.pdf
+/tmp
