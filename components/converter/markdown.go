@@ -1,13 +1,19 @@
 package converter
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/chromedp"
 	"github.com/google/uuid"
-	"github.com/mandolyte/mdtopdf"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
 // MarkdownToPDF converts a markdown file to a PDF
@@ -18,16 +24,18 @@ func MarkdownToPDF(inputFile string, outputFile string) error {
 		return err
 	}
 
-	// Create a new PDF renderer (Portrait, A4, output file, LIGHT theme)
-	pf := mdtopdf.NewPdfRenderer("P", "A4", outputFile, "", nil, mdtopdf.LIGHT)
-
-	// Process the markdown content into PDF
-	err = pf.Process(data)
-	if err != nil {
-		return err
+	// Convert markdown to HTML
+	md := goldmark.New(goldmark.WithExtensions(extension.Table))
+	var buf bytes.Buffer
+	if err := md.Convert(data, &buf); err != nil {
+		return fmt.Errorf("failed to convert markdown: %w", err)
 	}
 
-	return nil
+	// Wrap in HTML with styling
+	html := wrapHTML(buf.String(), nil)
+
+	// Generate PDF using Chrome
+	return htmlToPDF(html, outputFile)
 }
 
 // ImageData holds image bytes and its placeholder name
@@ -37,8 +45,18 @@ type ImageData struct {
 	Filename    string // e.g., "chart_1.png"
 }
 
+// ReportData holds text data for report template placeholders
+type ReportData struct {
+	Organization string
+	Dashboard    string
+	DateFrom     string
+	DateTo       string
+	Timezone     string
+	GeneratedAt  string
+}
+
 // GeneratePDFWithImages creates a PDF from markdown template with embedded images
-func GeneratePDFWithImages(templatePath string, outputPath string, images []ImageData) error {
+func GeneratePDFWithImages(templatePath string, outputPath string, images []ImageData, data ReportData) error {
 	// Create unique temp directory for this request
 	tempDir := filepath.Join(os.TempDir(), "pdf-gen-"+uuid.New().String())
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
@@ -52,6 +70,14 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 	content := string(mdContent)
+
+	// Replace text placeholders with report data
+	content = strings.Replace(content, "{{ORGANIZATION}}", data.Organization, 1)
+	content = strings.Replace(content, "{{DASHBOARD}}", data.Dashboard, 1)
+	content = strings.Replace(content, "{{DATE_FROM}}", data.DateFrom, 1)
+	content = strings.Replace(content, "{{DATE_TO}}", data.DateTo, 1)
+	content = strings.Replace(content, "{{TIMEZONE}}", data.Timezone, 1)
+	content = strings.Replace(content, "{{GENERATED_AT}}", data.GeneratedAt, 1)
 
 	// Save each image and replace placeholder
 	for _, img := range images {

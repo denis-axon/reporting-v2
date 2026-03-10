@@ -3,7 +3,9 @@ package v1
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/denis-axon/reporting-v2/api/v1/utils"
 	"github.com/denis-axon/reporting-v2/components/converter"
@@ -96,9 +98,29 @@ func GeneratePDF(c *gin.Context) {
 	}
 	wg.Wait()
 
+	// Prepare report data
+	loc, _ := time.LoadLocation(timeZone)
+	now := time.Now().In(loc)
+
+	// Convert Unix timestamps to formatted dates
+	dateFormat := "2006-01-02 15:04:05"
+	fromUnix, _ := strconv.ParseInt(from, 10, 64)
+	toUnix, _ := strconv.ParseInt(to, 10, 64)
+	dateFromFormatted := time.Unix(fromUnix, 0).In(loc).Format(dateFormat)
+	dateToFormatted := time.Unix(toUnix, 0).In(loc).Format(dateFormat)
+
+	reportData := converter.ReportData{
+		Organization: org,
+		Dashboard:    "Reporting",
+		DateFrom:     dateFromFormatted,
+		DateTo:       dateToFormatted,
+		Timezone:     timeZone,
+		GeneratedAt:  now.Format(dateFormat),
+	}
+
 	// Generate PDF with unique output path
 	outputPath := filepath.Join(os.TempDir(), uuid.New().String()+".pdf")
-	err := converter.GeneratePDFWithImages("templates/report.md", outputPath, images)
+	err := converter.GeneratePDFWithImages("templates/report.md", outputPath, images, reportData)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating PDF: %v\n", err)
 		utils.ReturnError(c, err)
