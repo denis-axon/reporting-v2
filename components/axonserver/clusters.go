@@ -17,6 +17,15 @@ type ClusterInfo struct {
 	Version string `json:"version"`
 }
 
+// ClusterDetails contains detailed information about a specific cluster
+// type ClusterDetails struct {
+// 	NodeCount        int
+// 	DataCenters      string
+// 	CassandraVersion string
+// 	OSVersion        string
+// 	JavaVersion      string
+// }
+
 func GetClusters(org string) ([]ClusterInfo, error) {
 	res, err := doApiCall(org, "orgs")
 	if err != nil {
@@ -126,3 +135,102 @@ func getNodeCountAndClusterVersion(org, clusterType, cluster string) (int, strin
 func cacheKey(org string) string {
 	return "cloudapi-nodescache:" + org
 }
+
+// GetClusterDetails retrieves detailed information about a specific cluster
+// func GetClusterDetails(org, clusterType, clusterName string) (ClusterDetails, error) {
+// 	res, err := doApiCall(org, "nodes/"+org+"/"+clusterType+"/"+clusterName)
+// 	if err != nil {
+// 		return ClusterDetails{}, err
+// 	}
+
+// 	var data []interface{}
+// 	err = json.Unmarshal(res, &data)
+// 	if err != nil {
+// 		return ClusterDetails{}, err
+// 	}
+
+// 	// log the raw response for debugging
+// 	log.Info(fmt.Sprintf("GetClusterDetails raw data for %s/%s/%s: %+v", org, clusterType, clusterName, data))
+
+// 	details := ClusterDetails{
+// 		NodeCount:   len(data),
+// 		DataCenters: "All",
+// 	}
+
+// 	// Gather versions from all nodes
+// 	cassandraVersions := make([]string, 0)
+// 	osVersions := make([]string, 0)
+// 	javaVersions := make([]string, 0)
+// 	dcNames := make([]string, 0)
+
+// 	for _, n := range data {
+// 		node, ok := n.(map[string]interface{})
+// 		if !ok {
+// 			continue
+// 		}
+
+// 		// Get datacenter name
+// 		if dc, ok := node["dc"].(string); ok && dc != "" {
+// 			dcNames = append(dcNames, dc)
+// 		}
+
+// 		nodeDetails, ok := node["Details"].(map[string]interface{})
+// 		if !ok {
+// 			continue
+// 		}
+
+// 		// Cassandra version
+// 		if ver, ok := nodeDetails["comp_releaseVersion"].(string); ok && ver != "" {
+// 			cassandraVersions = append(cassandraVersions, strings.TrimSpace(ver))
+// 		}
+
+// 		// OS version
+// 		if osName, ok := nodeDetails["host_osName"].(string); ok {
+// 			osVer := ""
+// 			if v, ok := nodeDetails["host_osVersion"].(string); ok {
+// 				osVer = v
+// 			}
+// 			fullOS := strings.TrimSpace(osName + " " + osVer)
+// 			if fullOS != "" {
+// 				osVersions = append(osVersions, fullOS)
+// 			}
+// 		}
+
+// 		// Java version
+// 		if javaVer, ok := nodeDetails["jvm_version"].(string); ok && javaVer != "" {
+// 			javaVersions = append(javaVersions, strings.TrimSpace(javaVer))
+// 		}
+// 	}
+
+// 	// Get unique values
+// 	slices.Sort(cassandraVersions)
+// 	cassandraVersions = slices.Compact(cassandraVersions)
+// 	details.CassandraVersion = strings.Join(cassandraVersions, ", ")
+
+// 	slices.Sort(osVersions)
+// 	osVersions = slices.Compact(osVersions)
+// 	details.OSVersion = strings.Join(osVersions, ", ")
+
+// 	slices.Sort(javaVersions)
+// 	javaVersions = slices.Compact(javaVersions)
+// 	details.JavaVersion = strings.Join(javaVersions, ", ")
+
+// 	slices.Sort(dcNames)
+// 	dcNames = slices.Compact(dcNames)
+// 	if len(dcNames) > 0 {
+// 		details.DataCenters = strings.Join(dcNames, ", ")
+// 	}
+
+// 	// Set defaults if empty
+// 	if details.CassandraVersion == "" {
+// 		details.CassandraVersion = "N/A"
+// 	}
+// 	if details.OSVersion == "" {
+// 		details.OSVersion = "N/A"
+// 	}
+// 	if details.JavaVersion == "" {
+// 		details.JavaVersion = "N/A"
+// 	}
+
+// 	return details, nil
+// }

@@ -65,6 +65,7 @@ func setupRoutes(r *gin.Engine) {
 	v1.GET("/authcheck", apiv1.AuthCheck)
 
 	v1.GET("/reporting", apiv1.GeneratePDF)
+	v1.GET("/clusters", apiv1.GetOrgClusters)
 
 	// ensure there is a newline in the output because it doesn't always display correctly and it's annoying!
 	fmt.Println()

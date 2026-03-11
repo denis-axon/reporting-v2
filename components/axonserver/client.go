@@ -7,9 +7,10 @@ import (
 	"github.com/denis-axon/reporting-v2/components/httputil"
 	"github.com/denis-axon/reporting-v2/config"
 )
-	
+
 func doApiCall(org, apiCall string) ([]byte, error) {
-	// testorg1 API key for any cluster
+	// here should be a AxonSaas API key for the particular org and cluster
+	// TODO: check the token if it's for the testorg3
 	tok := config.GetInstance().AuthToken
 	if tok == "" {
 		return nil, errors.New("no auth token provided")
@@ -17,7 +18,7 @@ func doApiCall(org, apiCall string) ([]byte, error) {
 
 	w := bytes.NewBuffer(nil)
 	// TODO: add an ability to switch between Regular and SAML modes URLs based on org settings in Cloud API
-	err := config.GetInstance().AxonServerUrlTemplate.Execute(w, map[string]string{"Org": org})
+	err := config.GetInstance().AxonServerUrlTemplateSaml.Execute(w, map[string]string{"Org": org})
 	if err != nil {
 		return nil, err
 	}

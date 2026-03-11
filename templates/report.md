@@ -11,6 +11,20 @@
 
 ---
 
+## Cluster Information
+
+| Field | Value |
+|-------|-------|
+| Type | {{CLUSTER_TYPE}} |
+| Name | {{CLUSTER_NAME}} |
+| Node Count | {{NODE_COUNT}} |
+| Data Centers | {{DATA_CENTERS}} |
+| Apache Cassandra Version | {{CASSANDRA_VERSION}} |
+| OS Version | {{OS_VERSION}} |
+| Java Version | {{JAVA_VERSION}} |
+
+---
+
 ## Utilization
 
 ### CPU Usage

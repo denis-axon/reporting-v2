@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -20,8 +21,18 @@ var (
 
 func GetClient(org string) *client.Client {
 	clientMu.Lock()
-	defer clientMu.Unlock()
-	return clients[org]
+	c, exists := clients[org]
+	clientMu.Unlock()
+	if !exists {
+		if err := InitClient(org); err != nil {
+			fmt.Fprintf(os.Stderr, "Error initializing metrics client: %v\n", err)
+			return nil
+		}
+		clientMu.Lock()
+		c = clients[org]
+		clientMu.Unlock()
+	}
+	return c
 }
 
 func InitClient(org string) error {
@@ -125,4 +136,47 @@ func GetChartImage(org string, clusterName string, clusterType string, from stri
 	}
 
 	return resp.Data, nil
+}
+
+// type ClusterDetails struct {
+// 	NodeCount        int
+// 	DataCenters      string
+// 	CassandraVersion string
+// 	OSVersion        string
+// 	JavaVersion      string
+// }
+
+func GetClusters(org string) error {
+
+	// // Initialize metrics client for this org
+	// if err := InitClient(org); err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error initializing metrics client: %v\n", err)
+	// 	return err
+	// }
+
+	c := GetClient(org)
+	if c == nil {
+		return fmt.Errorf("metrics client not initialized for org %s", org)
+	}
+	ctx := context.Background()
+	req := client.NewRequest().
+		WithMethod("GET").
+		// WithPath("/dashboard/api/dash/chartImage").
+		WithPath("/dashboard/api/orgs").
+		Build()
+
+	resp, err := c.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	logger.Info("GetClusters response", zap.Any("resp", resp))
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
 }
