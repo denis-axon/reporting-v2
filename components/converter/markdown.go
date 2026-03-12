@@ -1,19 +1,14 @@
 package converter
 
 import (
-	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/chromedp"
+	"github.com/mandolyte/mdtopdf"
+
 	"github.com/google/uuid"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
 )
 
 // MarkdownToPDF converts a markdown file to a PDF
@@ -24,18 +19,16 @@ func MarkdownToPDF(inputFile string, outputFile string) error {
 		return err
 	}
 
-	// Convert markdown to HTML
-	md := goldmark.New(goldmark.WithExtensions(extension.Table))
-	var buf bytes.Buffer
-	if err := md.Convert(data, &buf); err != nil {
-		return fmt.Errorf("failed to convert markdown: %w", err)
+	// Create a new PDF renderer (Portrait, A4, output file, LIGHT theme)
+	pf := mdtopdf.NewPdfRenderer("P", "A4", outputFile, "", nil, mdtopdf.LIGHT)
+
+	// Process the markdown content into PDF
+	err = pf.Process(data)
+	if err != nil {
+		return err
 	}
 
-	// Wrap in HTML with styling
-	html := wrapHTML(buf.String(), nil)
-
-	// Generate PDF using Chrome
-	return htmlToPDF(html, outputFile)
+	return nil
 }
 
 // ImageData holds image bytes and its placeholder name
@@ -47,12 +40,19 @@ type ImageData struct {
 
 // ReportData holds text data for report template placeholders
 type ReportData struct {
-	Organization string
-	Dashboard    string
-	DateFrom     string
-	DateTo       string
-	Timezone     string
-	GeneratedAt  string
+	Organization     string
+	Dashboard        string
+	DateFrom         string
+	DateTo           string
+	Timezone         string
+	GeneratedAt      string
+	ClusterType      string
+	ClusterName      string
+	NodeCount        string
+	DataCenters      string
+	CassandraVersion string
+	OSVersion        string
+	JavaVersion      string
 }
 
 // GeneratePDFWithImages creates a PDF from markdown template with embedded images
@@ -78,6 +78,13 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 	content = strings.Replace(content, "{{DATE_TO}}", data.DateTo, 1)
 	content = strings.Replace(content, "{{TIMEZONE}}", data.Timezone, 1)
 	content = strings.Replace(content, "{{GENERATED_AT}}", data.GeneratedAt, 1)
+	content = strings.Replace(content, "{{CLUSTER_TYPE}}", data.ClusterType, 1)
+	content = strings.Replace(content, "{{CLUSTER_NAME}}", data.ClusterName, 1)
+	content = strings.Replace(content, "{{NODE_COUNT}}", data.NodeCount, 1)
+	content = strings.Replace(content, "{{DATA_CENTERS}}", data.DataCenters, 1)
+	content = strings.Replace(content, "{{CASSANDRA_VERSION}}", data.CassandraVersion, 1)
+	content = strings.Replace(content, "{{OS_VERSION}}", data.OSVersion, 1)
+	content = strings.Replace(content, "{{JAVA_VERSION}}", data.JavaVersion, 1)
 
 	// Save each image and replace placeholder
 	for _, img := range images {
