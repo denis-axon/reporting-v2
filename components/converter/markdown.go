@@ -39,19 +39,19 @@ type ImageData struct {
 
 // ReportData holds text data for report template placeholders
 type ReportData struct {
-	Organization     string
-	Dashboard        string
-	DateFrom         string
-	DateTo           string
-	Timezone         string
-	GeneratedAt      string
-	ClusterType      string
-	ClusterName      string
-	NodeCount        string
-	DataCenters      string
-	CassandraVersion string
-	OSVersion        string
-	JavaVersion      string
+    Organization     string
+    Dashboard        string
+    DateFrom         string
+    DateTo           string
+    Timezone         string
+    GeneratedAt      string
+    ClusterType      string
+    ClusterName      string
+    NodeCount        string
+    DataCenters      string
+    CassandraVersion string
+    JavaVersion      string
+    OSVersion        string
 }
 
 // GeneratePDFWithImages creates a PDF from markdown template with embedded images

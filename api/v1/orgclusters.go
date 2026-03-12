@@ -16,12 +16,12 @@ func GetOrgClusters(c *gin.Context) {
 	}
 
 	// cl, err := axonserver.GetClusters(orgId)
-	err := metrics.GetClusters(orgId)
+	allDetails, err := metrics.GetClusters(orgId)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusOK, gin.H{"clusters": allDetails})
 
 }

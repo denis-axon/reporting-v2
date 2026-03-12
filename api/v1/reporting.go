@@ -103,29 +103,37 @@ func GeneratePDF(c *gin.Context) {
 	dateToFormatted := time.Unix(toUnix, 0).In(loc).Format(dateFormat)
 
 	// Get cluster details
-	// clusterDetails, err := axonserver.GetClusterDetails(org, clusterType, clusterName)
-	err := metrics.GetClusters(org)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting cluster details: %v\n", err)
-		// Continue with default values if cluster details fail
-		// clusterDetails = axonserver.ClusterDetails{}
-	}
+    allDetails, err := metrics.GetClusters(org)
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error getting cluster details: %v\n", err)
+    }
 
-	reportData := converter.ReportData{
-		Organization: org,
-		Dashboard:    "Reporting",
-		DateFrom:     dateFromFormatted,
-		DateTo:       dateToFormatted,
-		Timezone:     timeZone,
-		GeneratedAt:  now.Format(dateFormat),
-		ClusterType:  clusterType,
-		ClusterName:  clusterName,
-		// NodeCount:        strconv.Itoa(clusterDetails.NodeCount),
-		// DataCenters:      clusterDetails.DataCenters,
-		// CassandraVersion: clusterDetails.CassandraVersion,
-		// OSVersion:        clusterDetails.OSVersion,
-		// JavaVersion:      clusterDetails.JavaVersion,
-	}
+    fmt.Printf("Cluster details: %+v\n", allDetails)
+
+    // Find the matching cluster details for the requested cluster
+    var matchedCluster metrics.ClusterDetails
+    for _, d := range allDetails {
+        if d.ClusterName == clusterName && d.ClusterType == clusterType {
+            matchedCluster = d
+            break
+        }
+    }
+
+    reportData := converter.ReportData{
+        Organization:     org,
+        Dashboard:        "Reporting",
+        DateFrom:         dateFromFormatted,
+        DateTo:           dateToFormatted,
+        Timezone:         timeZone,
+        GeneratedAt:      now.Format(dateFormat),
+        ClusterType:      clusterType,
+        ClusterName:      clusterName,
+        NodeCount:        strconv.Itoa(matchedCluster.NodeCount),
+        DataCenters:      matchedCluster.DataCenters,
+        CassandraVersion: matchedCluster.CassandraVersion,
+        JavaVersion:      matchedCluster.JavaVersion,
+        OSVersion:        matchedCluster.OSVersion,
+    }
 
 	// Generate PDF with unique output path
 	outputPath := filepath.Join(os.TempDir(), uuid.New().String()+".pdf")
