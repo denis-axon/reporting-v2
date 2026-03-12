@@ -96,46 +96,56 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 		content = strings.Replace(content, img.Placeholder, mdImage, 1)
 	}
 
-	// Write processed markdown to temp file
-	tempMdPath := filepath.Join(tempDir, "report.md")
-	if err := os.WriteFile(tempMdPath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write temp markdown: %w", err)
-	}
+	// Write to a temp file first, then rename to output path
+	// This prevents partial/corrupt files if generation fails
+	tempOutputPath := filepath.Join(tempDir, "output.pdf")
 
-	// Generate PDF
-	pf := mdtopdf.NewPdfRenderer("P", "A4", outputPath, "", nil, mdtopdf.LIGHT)
+	// Generate PDF — create renderer pointing to temp output
+	pf := mdtopdf.NewPdfRenderer("P", "A4", tempOutputPath, "", nil, mdtopdf.LIGHT)
 
 	// Override both header and body with light colors
-    lightStyle := mdtopdf.Styler{
-        Font:      "Arial",
-        Style:     "",
-        Size:      12,
-        Spacing:   2,
-        TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
-        FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
-    }
-    pf.THeader = mdtopdf.Styler{
-        Font:      "Arial",
-        Style:     "B",
-        Size:      12,
-        Spacing:   2,
-        TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
-        FillColor: mdtopdf.Color{Red: 245, Green: 245, Blue: 245},
-    }
-    pf.TBody = lightStyle
+	lightStyle := mdtopdf.Styler{
+		Font:      "Arial",
+		Style:     "",
+		Size:      12,
+		Spacing:   2,
+		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+		FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
+	}
+	pf.THeader = mdtopdf.Styler{
+		Font:      "Arial",
+		Style:     "B",
+		Size:      12,
+		Spacing:   2,
+		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+		FillColor: mdtopdf.Color{Red: 245, Green: 245, Blue: 245},
+	}
+	pf.TBody = lightStyle
 
-    // Also lighten the page background
-    pf.Backtick = mdtopdf.Styler{
-        Font:      "Courier",
-        Style:     "",
-        Size:      12,
-        Spacing:   2,
-        TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
-        FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
-    }
+	// Also lighten the page background
+	pf.Backtick = mdtopdf.Styler{
+		Font:      "Courier",
+		Style:     "",
+		Size:      12,
+		Spacing:   2,
+		TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+		FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
+	}
 
+	// Process markdown to PDF — only call this ONCE
 	if err := pf.Process([]byte(content)); err != nil {
 		return fmt.Errorf("failed to generate PDF: %w", err)
 	}
+
+	// Read the generated PDF and write to final output path
+	pdfData, err := os.ReadFile(tempOutputPath)
+	if err != nil {
+		return fmt.Errorf("failed to read generated PDF: %w", err)
+	}
+
+	if err := os.WriteFile(outputPath, pdfData, 0644); err != nil {
+		return fmt.Errorf("failed to write final PDF: %w", err)
+	}
+
 	return nil
 }
