@@ -10,7 +10,6 @@ require (
 	github.com/gocql/gocql v1.7.0
 	github.com/google/uuid v1.6.0
 	github.com/mandolyte/mdtopdf v1.5.3
-	github.com/yuin/goldmark v1.4.13
 	go.uber.org/zap v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )

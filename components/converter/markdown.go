@@ -6,9 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mandolyte/mdtopdf"
-
 	"github.com/google/uuid"
+	"github.com/mandolyte/mdtopdf"
 )
 
 // MarkdownToPDF converts a markdown file to a PDF
@@ -105,5 +104,38 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 
 	// Generate PDF
 	pf := mdtopdf.NewPdfRenderer("P", "A4", outputPath, "", nil, mdtopdf.LIGHT)
-	return pf.Process([]byte(content))
+
+	// Override both header and body with light colors
+    lightStyle := mdtopdf.Styler{
+        Font:      "Arial",
+        Style:     "",
+        Size:      12,
+        Spacing:   2,
+        TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+        FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
+    }
+    pf.THeader = mdtopdf.Styler{
+        Font:      "Arial",
+        Style:     "B",
+        Size:      12,
+        Spacing:   2,
+        TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+        FillColor: mdtopdf.Color{Red: 245, Green: 245, Blue: 245},
+    }
+    pf.TBody = lightStyle
+
+    // Also lighten the page background
+    pf.Backtick = mdtopdf.Styler{
+        Font:      "Courier",
+        Style:     "",
+        Size:      12,
+        Spacing:   2,
+        TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+        FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
+    }
+
+	if err := pf.Process([]byte(content)); err != nil {
+		return fmt.Errorf("failed to generate PDF: %w", err)
+	}
+	return nil
 }
