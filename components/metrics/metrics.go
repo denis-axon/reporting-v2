@@ -148,12 +148,6 @@ func GetChartImage(org string, clusterName string, clusterType string, from stri
 
 func GetClusters(org string) error {
 
-	// // Initialize metrics client for this org
-	// if err := InitClient(org); err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Error initializing metrics client: %v\n", err)
-	// 	return err
-	// }
-
 	c := GetClient(org)
 	if c == nil {
 		return fmt.Errorf("metrics client not initialized for org %s", org)
@@ -161,8 +155,7 @@ func GetClusters(org string) error {
 	ctx := context.Background()
 	req := client.NewRequest().
 		WithMethod("GET").
-		// WithPath("/dashboard/api/dash/chartImage").
-		WithPath("/dashboard/api/orgs").
+		WithPath("/dashboard/api/v1/orgs").
 		Build()
 
 	resp, err := c.Do(ctx, req)
