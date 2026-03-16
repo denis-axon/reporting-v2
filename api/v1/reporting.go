@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -75,10 +76,10 @@ func GeneratePDF(c *gin.Context) {
 		wg.Add(1)
 		go func(idx int, c struct{ placeholder, widgetUuid string }) {
 			defer wg.Done()
-			data, err := metrics.GetChartImage(org, clusterName, clusterType, from, to, timeZone, c.widgetUuid) // pass widget UUID
+			data, err := metrics.GetChartImage(org, clusterName, clusterType, from, to, timeZone, c.widgetUuid)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error getting chart image for widget %s: %v\n", c.widgetUuid, err)
-				return // handle error appropriately
+				return
 			}
 			mu.Lock()
 			images = append(images, converter.ImageData{
@@ -103,37 +104,41 @@ func GeneratePDF(c *gin.Context) {
 	dateToFormatted := time.Unix(toUnix, 0).In(loc).Format(dateFormat)
 
 	// Get cluster details
-    allDetails, err := metrics.GetClusters(org)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Error getting cluster details: %v\n", err)
-    }
+	allDetails, err := metrics.GetClusters(org)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting cluster details: %v\n", err)
+	}
 
-    fmt.Printf("Cluster details: %+v\n", allDetails)
+	fmt.Printf("Cluster details: %+v\n", allDetails)
 
-    // Find the matching cluster details for the requested cluster
-    var matchedCluster metrics.ClusterDetails
-    for _, d := range allDetails {
-        if d.ClusterName == clusterName && d.ClusterType == clusterType {
-            matchedCluster = d
-            break
-        }
-    }
+	// Find the matching cluster details for the requested cluster
+	var matchedCluster metrics.ClusterDetails
+	for _, d := range allDetails {
+		if d.ClusterName == clusterName && d.ClusterType == clusterType {
+			matchedCluster = d
+			break
+		}
+	}
 
-    reportData := converter.ReportData{
-        Organization:     org,
-        Dashboard:        "Reporting",
-        DateFrom:         dateFromFormatted,
-        DateTo:           dateToFormatted,
-        Timezone:         timeZone,
-        GeneratedAt:      now.Format(dateFormat),
-        ClusterType:      clusterType,
-        ClusterName:      clusterName,
-        NodeCount:        strconv.Itoa(matchedCluster.NodeCount),
-        DataCenters:      matchedCluster.DataCenters,
-        CassandraVersion: matchedCluster.CassandraVersion,
-        JavaVersion:      matchedCluster.JavaVersion,
-        OSVersion:        matchedCluster.OSVersion,
-    }
+	// Fetch backup/snapshot data and build the backups markdown section
+	backupsSection := buildBackupsSection(org, clusterType, clusterName)
+
+	reportData := converter.ReportData{
+		Organization:     org,
+		Dashboard:        "Reporting",
+		DateFrom:         dateFromFormatted,
+		DateTo:           dateToFormatted,
+		Timezone:         timeZone,
+		GeneratedAt:      now.Format(dateFormat),
+		ClusterType:      clusterType,
+		ClusterName:      clusterName,
+		NodeCount:        strconv.Itoa(matchedCluster.NodeCount),
+		DataCenters:      matchedCluster.DataCenters,
+		CassandraVersion: matchedCluster.CassandraVersion,
+		JavaVersion:      matchedCluster.JavaVersion,
+		OSVersion:        matchedCluster.OSVersion,
+		BackupsSection:   backupsSection,
+	}
 
 	// Generate PDF with unique output path
 	outputPath := filepath.Join(os.TempDir(), uuid.New().String()+".pdf")
@@ -151,4 +156,68 @@ func GeneratePDF(c *gin.Context) {
 	c.File(outputPath)
 
 	fmt.Printf("PDF generated successfully at %s\n", outputPath)
+}
+
+// buildBackupsSection fetches cassandra snapshot data and renders a markdown string
+// for the backups section of the report.
+func buildBackupsSection(org, clusterType, clusterName string) string {
+	snapshotResp, err := metrics.GetCassandraSnapshot(org, clusterType, clusterName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting cassandra snapshot: %v\n", err)
+		return "## Backups\n\nNo backup data available.\n"
+	}
+
+	summaries := metrics.GetBackupSummaries(snapshotResp)
+	if len(summaries) == 0 {
+		return "## Backups\n\nNo backup schedules found.\n"
+	}
+
+	var sb strings.Builder
+	// sb.WriteString("## Backups\n\n")
+
+	for i, summary := range summaries {
+		sb.WriteString(fmt.Sprintf("##### Schedule %d\n\n", i+1))
+
+		sb.WriteString("```text\n")
+		sb.WriteString(fmt.Sprintf("Tag                       : %s\n", summary.Tag))
+		sb.WriteString(fmt.Sprintf("Schedule                  : %s\n", summary.ScheduleExpr))
+		sb.WriteString(fmt.Sprintf("Data Centers              : %s\n", summary.Datacenters))
+		sb.WriteString(fmt.Sprintf("Remote Type               : %s\n", summary.RemoteType))
+		sb.WriteString("```\n\n")
+
+		sb.WriteString("###### Backups Summary\n\n")
+		sb.WriteString("```text\n")
+		sb.WriteString(fmt.Sprintf("Successful Backups        : %d\n", summary.Successful))
+		sb.WriteString(fmt.Sprintf("Failed Backups            : %d\n", summary.Failed))
+		sb.WriteString("```\n\n")
+
+		if summary.Failed > 0 && len(summary.FailedBackups) > 0 {
+			sb.WriteString("###### Failed Backups Details\n\n")
+			for j, fb := range summary.FailedBackups {
+				sb.WriteString(fmt.Sprintf("**Failure %d**\n\n", j+1))
+				sb.WriteString("```text\n")
+				sb.WriteString(fmt.Sprintf("Backup Time               : %s\n", fb.BackupTime))
+				sb.WriteString(fmt.Sprintf("Failed Nodes              : %s\n", strings.Join(fb.FailedNodes, ", ")))
+				for k, msg := range fb.FailureMessages {
+					truncated := truncateMessage(msg, 120)
+					if k == 0 {
+						sb.WriteString(fmt.Sprintf("Error                     : %s\n", truncated))
+					} else {
+						sb.WriteString(fmt.Sprintf("                          : %s\n", truncated))
+					}
+				}
+				sb.WriteString("```\n\n")
+			}
+		}
+	}
+
+	return sb.String()
+}
+
+// truncateMessage shortens a message to maxLen characters, appending "..." if truncated.
+func truncateMessage(msg string, maxLen int) string {
+	if len(msg) <= maxLen {
+		return msg
+	}
+	return msg[:maxLen] + "..."
 }

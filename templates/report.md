@@ -25,6 +25,12 @@ Java Version              : {{JAVA_VERSION}}
 
 ---
 
+## Backups
+
+{{BACKUPS_SECTION}}
+
+---
+
 ## Utilization
 
 ### CPU Usage
