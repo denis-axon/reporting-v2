@@ -196,22 +196,39 @@ func buildBackupsSection(org, clusterType, clusterName string) string {
 			for j, fb := range summary.FailedBackups {
 				sb.WriteString(fmt.Sprintf("**Failure %d**\n\n", j+1))
 				sb.WriteString("```text\n")
-				sb.WriteString(fmt.Sprintf("Backup Time               : %s\n", fb.BackupTime))
-				sb.WriteString(fmt.Sprintf("Failed Nodes              : %s\n", strings.Join(fb.FailedNodes, ", ")))
-				for k, msg := range fb.FailureMessages {
-					truncated := truncateMessage(msg, 120)
-					if k == 0 {
-						sb.WriteString(fmt.Sprintf("Error                     : %s\n", truncated))
-					} else {
-						sb.WriteString(fmt.Sprintf("                          : %s\n", truncated))
-					}
+				sb.WriteString(fmt.Sprintf("Backup Time    : %s\n", fb.BackupTime))
+				sb.WriteString(fmt.Sprintf("Failed Nodes   : %d\n", len(fb.FailedNodes)))
+				for _, nodeID := range fb.FailedNodes {
+					sb.WriteString(fmt.Sprintf("                 %s\n", nodeID))
 				}
 				sb.WriteString("```\n\n")
+
+				// Render errors as regular text for smaller font rendering
+				uniqueErrors := deduplicateErrors(fb.FailureMessages)
+				for _, msg := range uniqueErrors {
+					sb.WriteString(fmt.Sprintf("*%s*\n\n", msg))
+				}
 			}
 		}
 	}
 
 	return sb.String()
+}
+
+func deduplicateErrors(messages []string) []string {
+	seen := make(map[string]bool)
+	var unique []string
+	for _, msg := range messages {
+		key := msg
+		if len(key) > 80 {
+			key = key[:80]
+		}
+		if !seen[key] {
+			seen[key] = true
+			unique = append(unique, msg)
+		}
+	}
+	return unique
 }
 
 // truncateMessage shortens a message to maxLen characters, appending "..." if truncated.
