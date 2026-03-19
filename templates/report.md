@@ -33,11 +33,17 @@ Java Version              : {{JAVA_VERSION}}
 
 ## Utilization
 
-### CPU Usage
+##### Max Disk Read Per Second
+{{CHART_DISK_READ}}
+
+##### Used Disk Space Per Node
+{{CHART_DISK_USAGE}}
+
+##### Average CPU Usage per DC
 {{CHART_CPU}}
 
-### Memory Usage
-{{CHART_MEMORY}}
+##### Max Disk Write Per Second
+{{CHART_DISK_WRITE}}
 
-### Disk Usage
-{{CHART_DISK}}
+##### Average Disk % Usage All
+{{CHART_DISK_ALL_USAGE}}

@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/denis-axon/reporting-v2/api/v1/utils"
@@ -20,9 +19,20 @@ import (
 )
 
 // TOOD: should they be added to env vars?
-// for test41cluster the UUID was c11b97f0-6b2e-40cd-abc6-b721e38778b9
-var WIDGET_CHART_CPU_UUID = "8d6ce9dc-77fe-4576-8b30-7986d8e0bf9b"
-var WIDGET_CHART_MEMORY_UUID = "8d6ce9dc-77fe-4576-8b30-7986d8e0bf9b"
+// Max Disk Read Per Second
+var WIDGET_CHART_DISK_READ_UUID = "34c7b8c9-e355-44eb-8801-1cda450627f4"
+
+// Used Disk Space Per Node
+var WIDGET_CHART_DISK_USAGE_UUID = "d20d4c11-abdb-4f57-8039-54d4678d7400"
+
+// Average CPU Usage per DC
+var WIDGET_CHART_CPU_UUID = "323fc1c5-fd7e-4485-ae10-724b146735b3"
+
+// Max Disk Write Per Second
+var WIDGET_CHART_DISK_WRITE_UUID = "237fddeb-594c-4a84-9916-83dc30d1675e"
+
+// Average Disk % Usage All
+var WIDGET_CHART_DISK_ALL_USAGE_UUID = "483f11de-feaf-4275-8d92-68315ae5f236"
 
 func GeneratePDF(c *gin.Context) {
 	// Get org from query parameter
@@ -59,38 +69,54 @@ func GeneratePDF(c *gin.Context) {
 		return
 	}
 
-	// Fetch all chart images concurrently
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	// Fetch chart images sequentially to avoid overwhelming the chart
+	// rendering server (concurrent requests cause timeouts).
 	var images []converter.ImageData
 
 	chartConfigs := []struct {
 		placeholder string
 		widgetUuid  string
 	}{
+		{"{{CHART_DISK_READ}}", WIDGET_CHART_DISK_READ_UUID},
+		{"{{CHART_DISK_USAGE}}", WIDGET_CHART_DISK_USAGE_UUID},
 		{"{{CHART_CPU}}", WIDGET_CHART_CPU_UUID},
-		{"{{CHART_MEMORY}}", WIDGET_CHART_MEMORY_UUID},
+		{"{{CHART_DISK_WRITE}}", WIDGET_CHART_DISK_WRITE_UUID},
+		// {"{{CHART_DISK_ALL_USAGE}}", WIDGET_CHART_DISK_ALL_USAGE_UUID},
 	}
 
 	for i, cfg := range chartConfigs {
-		wg.Add(1)
-		go func(idx int, c struct{ placeholder, widgetUuid string }) {
-			defer wg.Done()
-			data, err := metrics.GetChartImage(org, clusterName, clusterType, from, to, timeZone, c.widgetUuid)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error getting chart image for widget %s: %v\n", c.widgetUuid, err)
-				return
-			}
-			mu.Lock()
-			images = append(images, converter.ImageData{
-				Placeholder: c.placeholder,
-				Data:        data,
-				Filename:    fmt.Sprintf("chart_%d.png", idx),
-			})
-			mu.Unlock()
-		}(i, cfg)
+		data, err := metrics.GetChartImage(org, clusterName, clusterType, from, to, timeZone, cfg.widgetUuid)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting chart image for widget %s: %v\n", cfg.widgetUuid, err)
+			continue
+		}
+		if len(data) == 0 {
+			fmt.Fprintf(os.Stderr, "Warning: empty chart image returned for widget %s\n", cfg.widgetUuid)
+			continue
+		}
+
+		// Detect image format from magic bytes
+		ext := detectImageFormat(data)
+		fmt.Printf("Received chart image for widget %s (idx=%d): %d bytes (format: %s)\n", cfg.widgetUuid, i, len(data), ext)
+
+		// mdtopdf only supports PNG and JPEG; skip unsupported formats
+		if ext != "png" && ext != "jpg" {
+			fmt.Fprintf(os.Stderr, "Warning: unsupported image format '%s' for widget %s, skipping\n", ext, cfg.widgetUuid)
+			continue
+		}
+
+		images = append(images, converter.ImageData{
+			Placeholder: cfg.placeholder,
+			Data:        data,
+			Filename:    fmt.Sprintf("chart_%d.%s", i, ext),
+		})
+		fmt.Printf("Added chart %d: placeholder=%s filename=%s\n", i, cfg.placeholder, fmt.Sprintf("chart_%d.%s", i, ext))
 	}
-	wg.Wait()
+
+	fmt.Printf("Total charts fetched: %d/%d\n", len(images), len(chartConfigs))
+	for _, img := range images {
+		fmt.Printf("  -> placeholder=%s filename=%s size=%d bytes\n", img.Placeholder, img.Filename, len(img.Data))
+	}
 
 	// Prepare report data
 	loc, _ := time.LoadLocation(timeZone)
@@ -109,7 +135,7 @@ func GeneratePDF(c *gin.Context) {
 		fmt.Fprintf(os.Stderr, "Error getting cluster details: %v\n", err)
 	}
 
-	fmt.Printf("Cluster details: %+v\n", allDetails)
+	// fmt.Printf("Cluster details: %+v\n", allDetails)
 
 	// Find the matching cluster details for the requested cluster
 	var matchedCluster metrics.ClusterDetails
@@ -237,4 +263,32 @@ func truncateMessage(msg string, maxLen int) string {
 		return msg
 	}
 	return msg[:maxLen] + "..."
+}
+
+// detectImageFormat returns the file extension based on magic bytes.
+func detectImageFormat(data []byte) string {
+	if len(data) < 8 {
+		return "unknown"
+	}
+	// PNG: 89 50 4E 47
+	if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
+		return "png"
+	}
+	// JPEG: FF D8 FF
+	if data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
+		return "jpg"
+	}
+	// GIF: 47 49 46
+	if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 {
+		return "gif"
+	}
+	// SVG: starts with '<' (XML)
+	if data[0] == 0x3C {
+		return "svg"
+	}
+	// WebP: RIFF....WEBP
+	if len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
+		return "webp"
+	}
+	return "unknown"
 }

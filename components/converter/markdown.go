@@ -93,9 +93,13 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 		if err := os.WriteFile(imgPath, img.Data, 0644); err != nil {
 			return fmt.Errorf("failed to write image %s: %w", img.Filename, err)
 		}
-		// Replace placeholder with markdown image reference
-		mdImage := fmt.Sprintf("![%s](%s)", img.Filename, imgPath)
-		content = strings.Replace(content, img.Placeholder, mdImage, 1)
+		mdImage := fmt.Sprintf("![](%s)", imgPath)
+		if strings.Contains(content, img.Placeholder) {
+			fmt.Printf("Replacing placeholder %s with image %s\n", img.Placeholder, imgPath)
+			content = strings.Replace(content, img.Placeholder, mdImage, 1)
+		} else {
+			fmt.Printf("WARNING: placeholder %s not found in template!\n", img.Placeholder)
+		}
 	}
 
 	// Write to a temp file first, then rename to output path
