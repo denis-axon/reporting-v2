@@ -110,13 +110,13 @@ func Healthy(org string) (error, bool) {
 	return nil, resp.StatusCode == 200
 }
 
-func GetChartImage(org string, clusterName string, clusterType string, from string, to string, timeZone string, widgetUuid string) ([]byte, error) {
+func GetChartImage(org string, clusterName string, clusterType string, from string, to string, timeZone string, widgetUuid string, chartType string) ([]byte, error) {
 	c := GetClient(org)
 	if c == nil {
 		return nil, fmt.Errorf("metrics client not initialized for org %s", org)
 	}
 	ctx := context.Background()
-	req := client.NewRequest().
+	b := client.NewRequest().
 		WithMethod("GET").
 		WithPath("/dashboard/api/dash/chartImage").
 		WithQueryParam("org", org).
@@ -127,8 +127,11 @@ func GetChartImage(org string, clusterName string, clusterType string, from stri
 		WithQueryParam("timeZone", timeZone).
 		WithQueryParam("from", from).
 		WithQueryParam("to", to).
-		WithQueryParam("widgetUuid", widgetUuid).
-		Build()
+		WithQueryParam("widgetUuid", widgetUuid)
+	if chartType != "" {
+		b = b.WithQueryParam("chartType", chartType)
+	}
+	req := b.Build()
 
 	resp, err := c.Do(ctx, req)
 	if err != nil {

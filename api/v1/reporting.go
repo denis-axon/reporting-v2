@@ -34,6 +34,9 @@ var WIDGET_CHART_DISK_WRITE_UUID = "237fddeb-594c-4a84-9916-83dc30d1675e"
 // Average Disk % Usage All
 var WIDGET_CHART_DISK_ALL_USAGE_UUID = "483f11de-feaf-4275-8d92-68315ae5f236"
 
+// Coordinator Reads distribution
+var WIDGET_CHART_COORDINATOR_READS_UUID = "1851ace3-976f-459e-843c-e0119f718c8d"
+
 func GeneratePDF(c *gin.Context) {
 	// Get org from query parameter
 	org := c.Query("org")
@@ -76,16 +79,17 @@ func GeneratePDF(c *gin.Context) {
 	chartConfigs := []struct {
 		placeholder string
 		widgetUuid  string
+		chartType   string
 	}{
-		{"{{CHART_DISK_READ}}", WIDGET_CHART_DISK_READ_UUID},
-		{"{{CHART_DISK_USAGE}}", WIDGET_CHART_DISK_USAGE_UUID},
-		{"{{CHART_CPU}}", WIDGET_CHART_CPU_UUID},
-		{"{{CHART_DISK_WRITE}}", WIDGET_CHART_DISK_WRITE_UUID},
-		// {"{{CHART_DISK_ALL_USAGE}}", WIDGET_CHART_DISK_ALL_USAGE_UUID},
+		{"{{CHART_DISK_READ}}", WIDGET_CHART_DISK_READ_UUID, ""},
+		{"{{CHART_DISK_USAGE}}", WIDGET_CHART_DISK_USAGE_UUID, ""},
+		{"{{CHART_CPU}}", WIDGET_CHART_CPU_UUID, ""},
+		{"{{CHART_DISK_WRITE}}", WIDGET_CHART_DISK_WRITE_UUID, ""},
+		{"{{CHART_DISK_ALL_USAGE}}", WIDGET_CHART_DISK_ALL_USAGE_UUID, "pie"},
 	}
 
 	for i, cfg := range chartConfigs {
-		data, err := metrics.GetChartImage(org, clusterName, clusterType, from, to, timeZone, cfg.widgetUuid)
+		data, err := metrics.GetChartImage(org, clusterName, clusterType, from, to, timeZone, cfg.widgetUuid, cfg.chartType)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting chart image for widget %s: %v\n", cfg.widgetUuid, err)
 			continue
