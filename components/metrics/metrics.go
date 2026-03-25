@@ -110,6 +110,66 @@ func Healthy(org string) (error, bool) {
 	return nil, resp.StatusCode == 200
 }
 
+type EventsMetadata struct {
+	Count       string `json:"_count"`
+	SearchAfter string `json:"search_after"`
+}
+
+type Event struct {
+	ID      string `json:"id"`
+	Time    int64  `json:"time"`
+	Type    string `json:"type"`
+	HostID  string `json:"host_id"`
+	Message string `json:"message"`
+	Source  string `json:"source"`
+	Level   int    `json:"level"`
+}
+
+type EventsResponse struct {
+	Metadata EventsMetadata `json:"metadata"`
+	Data     []Event        `json:"data"`
+}
+
+func GetEvents(org string, clusterType string, clusterName string, eventType string, start string, end string) (*EventsResponse, error) {
+	c := GetClient(org)
+	if c == nil {
+		return nil, fmt.Errorf("metrics client not initialized for org %s", org)
+	}
+	ctx := context.Background()
+
+	body := map[string]string{
+		"host_id": "",
+		"level":   "error",
+		"message": "",
+		"source":  "",
+		"type":    eventType,
+	}
+
+	req := client.NewRequest().
+		WithMethod("POST").
+		WithPath("/dashboard/api/v1/events/"+org+"/"+clusterType+"/"+clusterName).
+		WithQueryParam("start", start).
+		WithQueryParam("end", end).
+		WithBody(body).
+		Build()
+
+	resp, err := c.Do(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var eventsResp EventsResponse
+	if err := json.Unmarshal(resp.Raw, &eventsResp); err != nil {
+		return nil, fmt.Errorf("failed to parse events response: %w", err)
+	}
+
+	return &eventsResp, nil
+}
+
 func GetChartImage(org string, clusterName string, clusterType string, from string, to string, timeZone string, widgetUuid string, chartType string) ([]byte, error) {
 	c := GetClient(org)
 	if c == nil {

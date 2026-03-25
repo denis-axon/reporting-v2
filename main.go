@@ -66,6 +66,7 @@ func setupRoutes(r *gin.Engine) {
 
 	v1.GET("/reporting", apiv1.GeneratePDF)
 	v1.GET("/clusters", apiv1.GetOrgClusters)
+	v1.POST("/events", apiv1.GetOrgClusterEvents)
 
 	// ensure there is a newline in the output because it doesn't always display correctly and it's annoying!
 	fmt.Println()
