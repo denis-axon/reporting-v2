@@ -61,10 +61,9 @@ func setupRoutes(r *gin.Engine) {
 	// for both SaaS and on-prem installs and the authentication works differently in these environments
 	// v1.Use(authenticationCheck)
 
-	// Authenticated dummy endpoint
-	v1.GET("/authcheck", apiv1.AuthCheck)
-
 	v1.GET("/reporting", apiv1.GeneratePDF)
+	// test endpoints:
+	v1.GET("/authcheck", apiv1.AuthCheck) // Authenticated dummy endpoint
 	v1.GET("/clusters", apiv1.GetOrgClusters)
 	v1.POST("/events", apiv1.GetOrgClusterEvents)
 

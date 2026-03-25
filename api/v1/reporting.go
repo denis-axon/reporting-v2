@@ -174,6 +174,13 @@ func GeneratePDF(c *gin.Context) {
 	// Fetch backup/snapshot data and build the backups markdown section
 	backupsSection := buildBackupsSection(org, clusterType, clusterName)
 
+	// Fetch security events and build the security section
+	var securitySB strings.Builder
+	for _, eventType := range []string{"authentication", "authorization"} {
+		securitySB.WriteString(buildSecuritySection(org, clusterType, clusterName, eventType, from, to, loc))
+	}
+	securitySection := securitySB.String()
+
 	reportData := converter.ReportData{
 		Organization:     org,
 		Dashboard:        "Reporting",
@@ -189,6 +196,7 @@ func GeneratePDF(c *gin.Context) {
 		JavaVersion:      matchedCluster.JavaVersion,
 		OSVersion:        matchedCluster.OSVersion,
 		BackupsSection:   backupsSection,
+		SecuritySection:  securitySection,
 	}
 
 	// Generate PDF with unique output path
@@ -261,6 +269,41 @@ func buildBackupsSection(org, clusterType, clusterName string) string {
 				}
 			}
 		}
+	}
+
+	return sb.String()
+}
+
+// buildSecuritySection fetches security events for a given eventType and renders
+// a markdown string for the security section of the report.
+func buildSecuritySection(org, clusterType, clusterName, eventType, from, to string, loc *time.Location) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("##### %s\n\n", strings.Title(eventType)))
+
+	eventsResp, err := metrics.GetEvents(org, clusterType, clusterName, eventType, from, to)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting %s events: %v\n", eventType, err)
+		sb.WriteString(fmt.Sprintf("No Failed %ss during this period.\n\n", strings.Title(eventType)))
+		return sb.String()
+	}
+
+	if len(eventsResp.Data) == 0 {
+		sb.WriteString(fmt.Sprintf("No Failed %ss during this period.\n\n", strings.Title(eventType)))
+		return sb.String()
+	}
+
+	sb.WriteString(fmt.Sprintf("**%d event(s) found.**\n\n", len(eventsResp.Data)))
+
+	for i, event := range eventsResp.Data {
+		eventTime := time.Unix(event.Time/1000, (event.Time%1000)*int64(time.Millisecond)).In(loc)
+		sb.WriteString(fmt.Sprintf("###### Event %d\n\n", i+1))
+		sb.WriteString("```text\n")
+		sb.WriteString(fmt.Sprintf("Time       : %s\n", eventTime.Format("2006-01-02 15:04:05")))
+		sb.WriteString(fmt.Sprintf("Type       : %s\n", event.Type))
+		sb.WriteString(fmt.Sprintf("Source     : %s\n", event.Source))
+		sb.WriteString(fmt.Sprintf("Host       : %s\n", event.HostID))
+		sb.WriteString(fmt.Sprintf("Message    : %s\n", event.Message))
+		sb.WriteString("```\n\n")
 	}
 
 	return sb.String()

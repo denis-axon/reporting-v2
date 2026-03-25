@@ -31,6 +31,9 @@ Java Version              : {{JAVA_VERSION}}
 
 ---
 
+## Security
+{{SECURITY_SECTION}}
+
 ## Utilization
 
 ##### Max Disk Read Per Second

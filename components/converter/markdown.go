@@ -53,6 +53,7 @@ type ReportData struct {
 	JavaVersion      string
 	OSVersion        string
 	BackupsSection   string
+	SecuritySection  string
 }
 
 // GeneratePDFWithImages creates a PDF from markdown template with embedded images
@@ -71,21 +72,22 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 	}
 	content := string(mdContent)
 
-    // Replace text placeholders with report data
-    content = strings.Replace(content, "{{ORGANIZATION}}", data.Organization, 1)
-    content = strings.Replace(content, "{{DASHBOARD}}", data.Dashboard, 1)
-    content = strings.Replace(content, "{{DATE_FROM}}", data.DateFrom, 1)
-    content = strings.Replace(content, "{{DATE_TO}}", data.DateTo, 1)
-    content = strings.Replace(content, "{{TIMEZONE}}", data.Timezone, 1)
-    content = strings.Replace(content, "{{GENERATED_AT}}", data.GeneratedAt, 1)
-    content = strings.Replace(content, "{{CLUSTER_TYPE}}", data.ClusterType, 1)
-    content = strings.Replace(content, "{{CLUSTER_NAME}}", data.ClusterName, 1)
-    content = strings.Replace(content, "{{NODE_COUNT}}", data.NodeCount, 1)
-    content = strings.Replace(content, "{{DATA_CENTERS}}", data.DataCenters, 1)
-    content = strings.Replace(content, "{{CASSANDRA_VERSION}}", data.CassandraVersion, 1)
-    content = strings.Replace(content, "{{OS_VERSION}}", data.OSVersion, 1)
-    content = strings.Replace(content, "{{JAVA_VERSION}}", data.JavaVersion, 1)
-    content = strings.Replace(content, "{{BACKUPS_SECTION}}", data.BackupsSection, 1)
+	// Replace text placeholders with report data
+	content = strings.Replace(content, "{{ORGANIZATION}}", data.Organization, 1)
+	content = strings.Replace(content, "{{DASHBOARD}}", data.Dashboard, 1)
+	content = strings.Replace(content, "{{DATE_FROM}}", data.DateFrom, 1)
+	content = strings.Replace(content, "{{DATE_TO}}", data.DateTo, 1)
+	content = strings.Replace(content, "{{TIMEZONE}}", data.Timezone, 1)
+	content = strings.Replace(content, "{{GENERATED_AT}}", data.GeneratedAt, 1)
+	content = strings.Replace(content, "{{CLUSTER_TYPE}}", data.ClusterType, 1)
+	content = strings.Replace(content, "{{CLUSTER_NAME}}", data.ClusterName, 1)
+	content = strings.Replace(content, "{{NODE_COUNT}}", data.NodeCount, 1)
+	content = strings.Replace(content, "{{DATA_CENTERS}}", data.DataCenters, 1)
+	content = strings.Replace(content, "{{CASSANDRA_VERSION}}", data.CassandraVersion, 1)
+	content = strings.Replace(content, "{{OS_VERSION}}", data.OSVersion, 1)
+	content = strings.Replace(content, "{{JAVA_VERSION}}", data.JavaVersion, 1)
+	content = strings.Replace(content, "{{BACKUPS_SECTION}}", data.BackupsSection, 1)
+	content = strings.Replace(content, "{{SECURITY_SECTION}}", data.SecuritySection, 1)
 
 	// Save each image and replace placeholder
 	for _, img := range images {
