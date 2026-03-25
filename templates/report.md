@@ -47,3 +47,23 @@ Java Version              : {{JAVA_VERSION}}
 
 ##### Average Disk % Usage All
 {{CHART_DISK_ALL_USAGE}}
+
+## Coordinator
+
+##### Coordinator Reads distribution
+{{CHART_COORDINATOR_READS}}
+
+##### Coordinator Writes distribution
+{{CHART_COORDINATOR_WRITES}}
+
+##### Coordinator Read Throughput Per $groupBy ($consistency) - Count Per Second
+{{CHART_COORDINATOR_READ_THROUGHPUT}}
+
+##### Total Coordinator Write Throughput Per $groupBy ($consistency) - Count Per Second
+{{CHART_COORDINATOR_WRITE_THROUGHPUT}}
+
+##### Max Coordinator Read $consistency Latency - $percentile
+{{CHART_COORDINATOR_READ_LATENCY}}
+
+##### Max Coordinator Write $consistency Latency - $percentile
+{{CHART_COORDINATOR_WRITE_LATENCY}}

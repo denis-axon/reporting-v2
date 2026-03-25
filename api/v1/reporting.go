@@ -37,6 +37,21 @@ var WIDGET_CHART_DISK_ALL_USAGE_UUID = "483f11de-feaf-4275-8d92-68315ae5f236"
 // Coordinator Reads distribution
 var WIDGET_CHART_COORDINATOR_READS_UUID = "1851ace3-976f-459e-843c-e0119f718c8d"
 
+// Coordinator Writes distribution
+var WIDGET_CHART_COORDINATOR_WRITES_UUID = "e697843a-2526-4630-8616-519377dc51f7"
+
+// Coordinator Read Throughput Per $groupBy ($consistency) - Count Per Second
+var WIDGET_CHART_COORDINATOR_READ_THROUGHPUT_UUID = "f1900e0d-4044-400f-a485-2f64258e4227"
+
+// Total Coordinator Write Throughput Per $groupBy ($consistency) - Count Per Second
+var WIDGET_CHART_COORDINATOR_WRITE_THROUGHPUT_UUID = "b844ea65-bf98-45a3-b833-b0621fed84ff"
+
+// Max Coordinator Read $consistency Latency - $percentile
+var WIDGET_CHART_COORDINATOR_READ_LATENCY_UUID = "dc1fe7f8-dc9a-4d11-9efc-fd99269e114b"
+
+// Max Coordinator Write $consistency Latency - $percentile
+var WIDGET_CHART_COORDINATOR_WRITE_LATENCY_UUID = "da8dbb16-2ce2-49be-81ea-cbdbe0bb1eb1"
+
 func GeneratePDF(c *gin.Context) {
 	// Get org from query parameter
 	org := c.Query("org")
@@ -81,11 +96,17 @@ func GeneratePDF(c *gin.Context) {
 		widgetUuid  string
 		chartType   string
 	}{
-		{"{{CHART_DISK_READ}}", WIDGET_CHART_DISK_READ_UUID, ""},
-		{"{{CHART_DISK_USAGE}}", WIDGET_CHART_DISK_USAGE_UUID, ""},
-		{"{{CHART_CPU}}", WIDGET_CHART_CPU_UUID, ""},
-		{"{{CHART_DISK_WRITE}}", WIDGET_CHART_DISK_WRITE_UUID, ""},
+		{"{{CHART_DISK_READ}}", WIDGET_CHART_DISK_READ_UUID, "line"},
+		{"{{CHART_DISK_USAGE}}", WIDGET_CHART_DISK_USAGE_UUID, "line"},
+		{"{{CHART_CPU}}", WIDGET_CHART_CPU_UUID, "line"},
+		{"{{CHART_DISK_WRITE}}", WIDGET_CHART_DISK_WRITE_UUID, "line"},
 		{"{{CHART_DISK_ALL_USAGE}}", WIDGET_CHART_DISK_ALL_USAGE_UUID, "pie"},
+		{"{{CHART_COORDINATOR_READS}}", WIDGET_CHART_COORDINATOR_READS_UUID, "pie"},
+		{"{{CHART_COORDINATOR_WRITES}}", WIDGET_CHART_COORDINATOR_WRITES_UUID, "pie"},
+		{"{{CHART_COORDINATOR_READ_THROUGHPUT}}", WIDGET_CHART_COORDINATOR_READ_THROUGHPUT_UUID, "line"},
+		{"{{CHART_COORDINATOR_WRITE_THROUGHPUT}}", WIDGET_CHART_COORDINATOR_WRITE_THROUGHPUT_UUID, "line"},
+		{"{{CHART_COORDINATOR_READ_LATENCY}}", WIDGET_CHART_COORDINATOR_READ_LATENCY_UUID, "line"},
+		{"{{CHART_COORDINATOR_WRITE_LATENCY}}", WIDGET_CHART_COORDINATOR_WRITE_LATENCY_UUID, "line"},
 	}
 
 	for i, cfg := range chartConfigs {
