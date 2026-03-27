@@ -154,21 +154,10 @@ func GeneratePDF(c *gin.Context) {
 	dateFromFormatted := time.Unix(fromUnix, 0).In(loc).Format(dateFormat)
 	dateToFormatted := time.Unix(toUnix, 0).In(loc).Format(dateFormat)
 
-	// Get cluster details
-	allDetails, err := metrics.GetClusters(org)
+	// Get cluster details directly for the requested cluster
+	matchedCluster, err := metrics.GetClusterDetails(org, clusterType, clusterName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting cluster details: %v\n", err)
-	}
-
-	// fmt.Printf("Cluster details: %+v\n", allDetails)
-
-	// Find the matching cluster details for the requested cluster
-	var matchedCluster metrics.ClusterDetails
-	for _, d := range allDetails {
-		if d.ClusterName == clusterName && d.ClusterType == clusterType {
-			matchedCluster = d
-			break
-		}
 	}
 
 	// Fetch backup/snapshot data and build the backups markdown section
@@ -177,7 +166,7 @@ func GeneratePDF(c *gin.Context) {
 	// Fetch security events and build the security section
 	var securitySB strings.Builder
 	for _, eventType := range []string{"authentication", "authorization"} {
-		securitySB.WriteString(buildSecuritySection(org, clusterType, clusterName, eventType, from, to, loc))
+		securitySB.WriteString(buildSecuritySection(org, clusterType, clusterName, eventType, from, to, loc, matchedCluster.NodeIdentifiersByHostID))
 	}
 	securitySection := securitySB.String()
 
@@ -276,7 +265,7 @@ func buildBackupsSection(org, clusterType, clusterName string) string {
 
 // buildSecuritySection fetches security events for a given eventType and renders
 // a markdown string for the security section of the report.
-func buildSecuritySection(org, clusterType, clusterName, eventType, from, to string, loc *time.Location) string {
+func buildSecuritySection(org, clusterType, clusterName, eventType, from, to string, loc *time.Location, nodeIdentifiers map[string]string) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("##### %s\n\n", strings.Title(eventType)))
 
@@ -301,7 +290,11 @@ func buildSecuritySection(org, clusterType, clusterName, eventType, from, to str
 		sb.WriteString(fmt.Sprintf("Time       : %s\n", eventTime.Format("2006-01-02 15:04:05")))
 		sb.WriteString(fmt.Sprintf("Type       : %s\n", event.Type))
 		sb.WriteString(fmt.Sprintf("Source     : %s\n", event.Source))
-		sb.WriteString(fmt.Sprintf("Host       : %s\n", event.HostID))
+		host := event.HostID
+		if id, ok := nodeIdentifiers[event.HostID]; ok && id != "" {
+			host = id
+		}
+		sb.WriteString(fmt.Sprintf("Host       : %s\n", host))
 		sb.WriteString(fmt.Sprintf("Message    : %s\n", event.Message))
 		sb.WriteString("```\n\n")
 	}

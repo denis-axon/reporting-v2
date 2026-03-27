@@ -206,13 +206,14 @@ func GetChartImage(org string, clusterName string, clusterType string, from stri
 }
 
 type ClusterDetails struct {
-	ClusterName      string
-	ClusterType      string
-	NodeCount        int
-	DataCenters      string
-	CassandraVersion string
-	JavaVersion      string
-	OSVersion        string
+	ClusterName             string
+	ClusterType             string
+	NodeCount               int
+	DataCenters             string
+	CassandraVersion        string
+	JavaVersion             string
+	OSVersion               string
+	NodeIdentifiersByHostID map[string]string
 }
 
 type ClustersResponse struct {
@@ -335,7 +336,7 @@ func GetClusters(org string) ([]ClusterDetails, error) {
 					zap.Int("status", cluster.Status),
 				)
 
-				details, err := getClusterDetails(org, clusterType, clusterName)
+				details, err := GetClusterDetails(org, clusterType, clusterName)
 				if err != nil {
 					logger.Error("Failed to get cluster details",
 						zap.String("clusterName", clusterName),
@@ -351,7 +352,7 @@ func GetClusters(org string) ([]ClusterDetails, error) {
 	return allDetails, nil
 }
 
-func getClusterDetails(org string, clusterType string, clusterName string) (ClusterDetails, error) {
+func GetClusterDetails(org string, clusterType string, clusterName string) (ClusterDetails, error) {
 	c := GetClient(org)
 	if c == nil {
 		return ClusterDetails{}, fmt.Errorf("metrics client not initialized for org %s", org)
@@ -400,8 +401,11 @@ func getClusterDetails(org string, clusterType string, clusterName string) (Clus
 	var lowestJava string
 	var cassandraVersion string
 	var osVersion string
+	nodeIdentifiersByHostID := make(map[string]string)
 
 	for _, node := range nodes {
+		hostID, _ := node["host_id"].(string)
+
 		// Data centers
 		if dc, ok := node["DC"].(string); ok && dc != "" {
 			dcSet[dc] = struct{}{}
@@ -411,6 +415,13 @@ func getClusterDetails(org string, clusterType string, clusterName string) (Clus
 		detailsMap, ok := node["Details"].(map[string]interface{})
 		if !ok {
 			continue
+		}
+
+		// Map host_id -> human_readable_identifier
+		if hostID != "" {
+			if hri, ok := detailsMap["human_readable_identifier"].(string); ok && hri != "" {
+				nodeIdentifiersByHostID[hostID] = hri
+			}
 		}
 
 		// Cassandra version (take first non-empty)
@@ -447,6 +458,7 @@ func getClusterDetails(org string, clusterType string, clusterName string) (Clus
 	details.CassandraVersion = cassandraVersion
 	details.JavaVersion = lowestJava
 	details.OSVersion = osVersion
+	details.NodeIdentifiersByHostID = nodeIdentifiersByHostID
 
 	return details, nil
 }
