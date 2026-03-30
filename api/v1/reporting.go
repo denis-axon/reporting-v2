@@ -75,6 +75,9 @@ func GeneratePDF(c *gin.Context) {
 		"width":       width,
 		"height":      height,
 
+		"org":         org,
+		"cluster":     clusterName,
+		"clusterType": clusterType,
 		"timeZone":    timeZone,
 		"from":        from,
 		"to":          to,
@@ -129,7 +132,7 @@ func GeneratePDF(c *gin.Context) {
 	}
 
 	for i, cfg := range chartConfigs {
-		data, err := metrics.GetChartImage(org, clusterName, clusterType, cfg.widgetUuid, cfg.chartType, sharedChartVars)
+		data, err := metrics.GetChartImage(sharedChartVars, cfg.widgetUuid, cfg.chartType)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting chart image for widget %s: %v\n", cfg.widgetUuid, err)
 			continue

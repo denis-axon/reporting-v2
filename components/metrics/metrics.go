@@ -170,18 +170,15 @@ func GetEvents(org string, clusterType string, clusterName string, eventType str
 	return &eventsResp, nil
 }
 
-func GetChartImage(org string, clusterName string, clusterType string, widgetUuid string, chartType string, sharedChartVars map[string]string) ([]byte, error) {
-	c := GetClient(org)
+func GetChartImage(sharedChartVars map[string]string, widgetUuid string, chartType string) ([]byte, error) {
+	c := GetClient(sharedChartVars["org"])
 	if c == nil {
-		return nil, fmt.Errorf("metrics client not initialized for org %s", org)
+		return nil, fmt.Errorf("metrics client not initialized for org %s", sharedChartVars["org"])
 	}
 	ctx := context.Background()
 	b := client.NewRequest().
 		WithMethod("GET").
 		WithPath("/dashboard/api/dash/chartImage").
-		WithQueryParam("org", org).
-		WithQueryParam("cluster", clusterName).
-		WithQueryParam("clusterType", clusterType).
 		WithQueryParam("widgetUuid", widgetUuid)
 
 	for k, v := range sharedChartVars {
