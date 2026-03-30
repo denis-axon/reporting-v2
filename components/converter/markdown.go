@@ -54,6 +54,9 @@ type ReportData struct {
 	OSVersion        string
 	BackupsSection   string
 	SecuritySection  string
+	Consistency      string
+	Percentile       string
+	GroupBy          string
 }
 
 // GeneratePDFWithImages creates a PDF from markdown template with embedded images
@@ -88,6 +91,9 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 	content = strings.Replace(content, "{{JAVA_VERSION}}", data.JavaVersion, 1)
 	content = strings.Replace(content, "{{BACKUPS_SECTION}}", data.BackupsSection, 1)
 	content = strings.Replace(content, "{{SECURITY_SECTION}}", data.SecuritySection, 1)
+	content = strings.ReplaceAll(content, "$consistency", data.Consistency)
+	content = strings.ReplaceAll(content, "$percentile", data.Percentile)
+	content = strings.ReplaceAll(content, "$groupBy", data.GroupBy)
 
 	// Save each image and replace placeholder
 	for _, img := range images {

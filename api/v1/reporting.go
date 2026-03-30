@@ -61,6 +61,25 @@ func GeneratePDF(c *gin.Context) {
 	to := c.Query("to")
 	timeZone := c.Query("timeZone")
 
+	width := c.DefaultQuery("width", "800")
+	height := c.DefaultQuery("height", "400")
+
+	consistency := c.DefaultQuery("consistency", "")
+	percentile := c.DefaultQuery("percentile", "99thPercentile")
+	groupBy := c.DefaultQuery("groupBy", "dc")
+
+	sharedChartVars := map[string]string{
+		"consistency": consistency,
+		"percentile":  percentile,
+		"groupBy":     groupBy,
+		"width":       width,
+		"height":      height,
+
+		"timeZone":    timeZone,
+		"from":        from,
+		"to":          to,
+	}
+
 	// Validate required query parameters
 	if org == "" {
 		utils.ReturnError(c, fmt.Errorf("missing required query parameter: org"))
@@ -110,7 +129,7 @@ func GeneratePDF(c *gin.Context) {
 	}
 
 	for i, cfg := range chartConfigs {
-		data, err := metrics.GetChartImage(org, clusterName, clusterType, from, to, timeZone, cfg.widgetUuid, cfg.chartType)
+		data, err := metrics.GetChartImage(org, clusterName, clusterType, cfg.widgetUuid, cfg.chartType, sharedChartVars)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting chart image for widget %s: %v\n", cfg.widgetUuid, err)
 			continue
@@ -186,6 +205,9 @@ func GeneratePDF(c *gin.Context) {
 		OSVersion:        matchedCluster.OSVersion,
 		BackupsSection:   backupsSection,
 		SecuritySection:  securitySection,
+		Consistency:      consistency,
+		Percentile:       percentile,
+		GroupBy:          groupBy,
 	}
 
 	// Generate PDF with unique output path

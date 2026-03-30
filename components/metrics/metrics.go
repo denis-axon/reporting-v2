@@ -170,7 +170,7 @@ func GetEvents(org string, clusterType string, clusterName string, eventType str
 	return &eventsResp, nil
 }
 
-func GetChartImage(org string, clusterName string, clusterType string, from string, to string, timeZone string, widgetUuid string, chartType string) ([]byte, error) {
+func GetChartImage(org string, clusterName string, clusterType string, widgetUuid string, chartType string, sharedChartVars map[string]string) ([]byte, error) {
 	c := GetClient(org)
 	if c == nil {
 		return nil, fmt.Errorf("metrics client not initialized for org %s", org)
@@ -182,15 +182,14 @@ func GetChartImage(org string, clusterName string, clusterType string, from stri
 		WithQueryParam("org", org).
 		WithQueryParam("cluster", clusterName).
 		WithQueryParam("clusterType", clusterType).
-		WithQueryParam("width", "800").
-		WithQueryParam("height", "400").
-		WithQueryParam("timeZone", timeZone).
-		WithQueryParam("from", from).
-		WithQueryParam("to", to).
 		WithQueryParam("widgetUuid", widgetUuid)
-	if chartType != "" {
-		b = b.WithQueryParam("chartType", chartType)
+
+	for k, v := range sharedChartVars {
+		if v != "" {
+			b = b.WithQueryParam(k, v)
+		}
 	}
+
 	req := b.Build()
 
 	resp, err := c.Do(ctx, req)
