@@ -1,4 +1,7 @@
-# Cluster Utilization Report
+{{LOGO}}
+
+
+## Cluster Utilization Report
 
 ```text
 Organization              : {{ORGANIZATION}}

@@ -165,6 +165,15 @@ func GeneratePDF(c *gin.Context) {
 		fmt.Printf("  -> placeholder=%s filename=%s size=%d bytes\n", img.Placeholder, img.Filename, len(img.Data))
 	}
 
+	// Prepend logo if available
+	if logoBytes, err := os.ReadFile("templates/logo.png"); err == nil {
+		images = append([]converter.ImageData{{
+			Placeholder: "{{LOGO}}",
+			Data:        logoBytes,
+			Filename:    "logo.png",
+		}}, images...)
+	}
+
 	// Prepare report data
 	loc, _ := time.LoadLocation(timeZone)
 	now := time.Now().In(loc)

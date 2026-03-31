@@ -117,6 +117,24 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 	// Generate PDF — create renderer pointing to temp output
 	pf := mdtopdf.NewPdfRenderer("P", "A4", tempOutputPath, "", nil, mdtopdf.LIGHT)
 
+	// Use Helvetica with no bold for all headings to achieve a thin appearance
+	thinHeading := func(size, spacing float64) mdtopdf.Styler {
+		return mdtopdf.Styler{
+			Font:      "Helvetica",
+			Style:     "",
+			Size:      size,
+			Spacing:   spacing,
+			TextColor: mdtopdf.Color{Red: 0, Green: 0, Blue: 0},
+			FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
+		}
+	}
+	pf.H1 = thinHeading(28, 8)
+	pf.H2 = thinHeading(22, 6)
+	pf.H3 = thinHeading(18, 5)
+	pf.H4 = thinHeading(14, 4)
+	pf.H5 = thinHeading(12, 3)
+	pf.H6 = thinHeading(11, 3)
+
 	// Override both header and body with light colors
 	lightStyle := mdtopdf.Styler{
 		Font:      "Arial",
