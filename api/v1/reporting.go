@@ -285,10 +285,10 @@ func buildBackupsSection(org, clusterType, clusterName string) string {
 				}
 				sb.WriteString("```\n\n")
 
-				// Render errors as regular text for smaller font rendering
+				// Render errors as blockquotes so they display in red
 				uniqueErrors := deduplicateErrors(fb.FailureMessages)
 				for _, msg := range uniqueErrors {
-					sb.WriteString(fmt.Sprintf("*%s*\n\n", msg))
+					sb.WriteString(fmt.Sprintf("> %s\n\n", msg))
 				}
 			}
 		}

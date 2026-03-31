@@ -154,6 +154,16 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 	}
 	pf.TBody = lightStyle
 
+	pf.Blockquote = mdtopdf.Styler{
+		Font:      "Arial",
+		Style:     "",
+		Size:      11,
+		Spacing:   2,
+		TextColor: mdtopdf.Color{Red: 192, Green: 0, Blue: 0},
+		FillColor: mdtopdf.Color{Red: 255, Green: 255, Blue: 255},
+	}
+	pf.UpdateBlockquoteStyler()
+
 	// Also lighten the page background
 	pf.Backtick = mdtopdf.Styler{
 		Font:      "Courier",
