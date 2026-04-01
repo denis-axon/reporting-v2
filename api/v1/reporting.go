@@ -61,8 +61,8 @@ func GeneratePDF(c *gin.Context) {
 	to := c.Query("to")
 	timeZone := c.Query("timeZone")
 
-	width := c.DefaultQuery("width", "800")
-	height := c.DefaultQuery("height", "400")
+	width := c.DefaultQuery("width", "680")
+	height := c.DefaultQuery("height", "425")
 
 	consistency := c.DefaultQuery("consistency", "")
 	percentile := c.DefaultQuery("percentile", "99thPercentile")
@@ -117,18 +117,19 @@ func GeneratePDF(c *gin.Context) {
 		placeholder string
 		widgetUuid  string
 		chartType   string
+		title       string
 	}{
-		{"{{CHART_DISK_READ}}", WIDGET_CHART_DISK_READ_UUID, "line"},
-		{"{{CHART_DISK_USAGE}}", WIDGET_CHART_DISK_USAGE_UUID, "line"},
-		{"{{CHART_CPU}}", WIDGET_CHART_CPU_UUID, "line"},
-		{"{{CHART_DISK_WRITE}}", WIDGET_CHART_DISK_WRITE_UUID, "line"},
-		{"{{CHART_DISK_ALL_USAGE}}", WIDGET_CHART_DISK_ALL_USAGE_UUID, "pie"},
-		{"{{CHART_COORDINATOR_READS}}", WIDGET_CHART_COORDINATOR_READS_UUID, "pie"},
-		{"{{CHART_COORDINATOR_WRITES}}", WIDGET_CHART_COORDINATOR_WRITES_UUID, "pie"},
-		{"{{CHART_COORDINATOR_READ_THROUGHPUT}}", WIDGET_CHART_COORDINATOR_READ_THROUGHPUT_UUID, "line"},
-		{"{{CHART_COORDINATOR_WRITE_THROUGHPUT}}", WIDGET_CHART_COORDINATOR_WRITE_THROUGHPUT_UUID, "line"},
-		{"{{CHART_COORDINATOR_READ_LATENCY}}", WIDGET_CHART_COORDINATOR_READ_LATENCY_UUID, "line"},
-		{"{{CHART_COORDINATOR_WRITE_LATENCY}}", WIDGET_CHART_COORDINATOR_WRITE_LATENCY_UUID, "line"},
+		{"{{CHART_DISK_READ}}", WIDGET_CHART_DISK_READ_UUID, "line", "Disk Read Per Node"},
+		{"{{CHART_CPU}}", WIDGET_CHART_CPU_UUID, "line", "CPU Usage Per Node"},
+		{"{{CHART_DISK_WRITE}}", WIDGET_CHART_DISK_WRITE_UUID, "line", "Disk Write Per Node"},
+		{"{{CHART_DISK_ALL_USAGE}}", WIDGET_CHART_DISK_ALL_USAGE_UUID, "pie", "Disk Usage Distribution"},
+		{"{{CHART_DISK_USAGE}}", WIDGET_CHART_DISK_USAGE_UUID, "line", "Used Disk Space Per Node"},
+		{"{{CHART_COORDINATOR_READS}}", WIDGET_CHART_COORDINATOR_READS_UUID, "pie", "Coordinator Reads Distribution"},
+		{"{{CHART_COORDINATOR_WRITES}}", WIDGET_CHART_COORDINATOR_WRITES_UUID, "pie", "Coordinator Writes Distribution"},
+		{"{{CHART_COORDINATOR_READ_THROUGHPUT}}", WIDGET_CHART_COORDINATOR_READ_THROUGHPUT_UUID, "line", "Coordinator Read Throughput"},
+		{"{{CHART_COORDINATOR_WRITE_THROUGHPUT}}", WIDGET_CHART_COORDINATOR_WRITE_THROUGHPUT_UUID, "line", "Coordinator Write Throughput"},
+		{"{{CHART_COORDINATOR_READ_LATENCY}}", WIDGET_CHART_COORDINATOR_READ_LATENCY_UUID, "line", "Coordinator Read Latency"},
+		{"{{CHART_COORDINATOR_WRITE_LATENCY}}", WIDGET_CHART_COORDINATOR_WRITE_LATENCY_UUID, "line", "Coordinator Write Latency"},
 	}
 
 	for i, cfg := range chartConfigs {
@@ -150,6 +151,10 @@ func GeneratePDF(c *gin.Context) {
 		if ext != "png" && ext != "jpg" {
 			fmt.Fprintf(os.Stderr, "Warning: unsupported image format '%s' for widget %s, skipping\n", ext, cfg.widgetUuid)
 			continue
+		}
+
+		if ext == "png" {
+			data = converter.AddTitleToImage(data, cfg.title) // add title first
 		}
 
 		images = append(images, converter.ImageData{

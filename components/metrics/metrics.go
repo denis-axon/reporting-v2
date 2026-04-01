@@ -181,6 +181,10 @@ func GetChartImage(sharedChartVars map[string]string, widgetUuid string, chartTy
 		WithPath("/dashboard/api/dash/chartImage").
 		WithQueryParam("widgetUuid", widgetUuid)
 
+	if chartType != "" {
+		b = b.WithQueryParam("chartType", chartType)
+	}
+
 	for k, v := range sharedChartVars {
 		if v != "" {
 			b = b.WithQueryParam(k, v)

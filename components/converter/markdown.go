@@ -115,7 +115,9 @@ func GeneratePDFWithImages(templatePath string, outputPath string, images []Imag
 	tempOutputPath := filepath.Join(tempDir, "output.pdf")
 
 	// Generate PDF — create renderer pointing to temp output
-	pf := mdtopdf.NewPdfRenderer("P", "A4", tempOutputPath, "", nil, mdtopdf.LIGHT)
+	pf := mdtopdf.NewPdfRenderer("P", "A4", tempOutputPath, "",
+		[]mdtopdf.RenderOption{mdtopdf.IsHorizontalRuleNewPage(true)},
+		mdtopdf.LIGHT)
 
 	// Use Helvetica with no bold for all headings to achieve a thin appearance
 	thinHeading := func(size, spacing float64) mdtopdf.Styler {
