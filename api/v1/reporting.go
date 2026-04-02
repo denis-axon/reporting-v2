@@ -170,15 +170,6 @@ func GeneratePDF(c *gin.Context) {
 		fmt.Printf("  -> placeholder=%s filename=%s size=%d bytes\n", img.Placeholder, img.Filename, len(img.Data))
 	}
 
-	// Prepend logo if available
-	if logoBytes, err := os.ReadFile("templates/logo.png"); err == nil {
-		images = append([]converter.ImageData{{
-			Placeholder: "{{LOGO}}",
-			Data:        logoBytes,
-			Filename:    "logo.png",
-		}}, images...)
-	}
-
 	// Prepare report data
 	loc, _ := time.LoadLocation(timeZone)
 	now := time.Now().In(loc)
@@ -229,7 +220,7 @@ func GeneratePDF(c *gin.Context) {
 
 	// Generate PDF with unique output path
 	outputPath := filepath.Join(os.TempDir(), uuid.New().String()+".pdf")
-	err = converter.GeneratePDFWithImages("templates/report.md", outputPath, images, reportData)
+	err = converter.GenerateHTMLReportPDF("templates/report.html", outputPath, images, reportData)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error generating PDF: %v\n", err)
 		utils.ReturnError(c, err)
@@ -245,55 +236,51 @@ func GeneratePDF(c *gin.Context) {
 	fmt.Printf("PDF generated successfully at %s\n", outputPath)
 }
 
-// buildBackupsSection fetches cassandra snapshot data and renders a markdown string
-// for the backups section of the report.
 func buildBackupsSection(org, clusterType, clusterName string) string {
 	snapshotResp, err := metrics.GetCassandraSnapshot(org, clusterType, clusterName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting cassandra snapshot: %v\n", err)
-		return "## Backups\n\nNo backup data available.\n"
+		return "<p>No backup data available.</p>"
 	}
 
 	summaries := metrics.GetBackupSummaries(snapshotResp)
 	if len(summaries) == 0 {
-		return "## Backups\n\nNo backup schedules found.\n"
+		return "<p>No backup schedules found.</p>"
 	}
 
 	var sb strings.Builder
-	// sb.WriteString("## Backups\n\n")
 
 	for i, summary := range summaries {
-		sb.WriteString(fmt.Sprintf("##### Schedule %d\n\n", i+1))
+		sb.WriteString(fmt.Sprintf("<h3>Schedule %d</h3>\n", i+1))
 
-		sb.WriteString("```text\n")
-		sb.WriteString(fmt.Sprintf("Tag                       : %s\n", summary.Tag))
-		sb.WriteString(fmt.Sprintf("Schedule                  : %s\n", summary.ScheduleExpr))
-		sb.WriteString(fmt.Sprintf("Data Centers              : %s\n", summary.Datacenters))
-		sb.WriteString(fmt.Sprintf("Remote Type               : %s\n", summary.RemoteType))
-		sb.WriteString("```\n\n")
+		sb.WriteString("<div class=\"mono-block\">")
+		sb.WriteString(fmt.Sprintf("Tag                       : %s\n", escapeHTMLStr(summary.Tag)))
+		sb.WriteString(fmt.Sprintf("Schedule                  : %s\n", escapeHTMLStr(summary.ScheduleExpr)))
+		sb.WriteString(fmt.Sprintf("Data Centers              : %s\n", escapeHTMLStr(summary.Datacenters)))
+		sb.WriteString(fmt.Sprintf("Remote Type               : %s\n", escapeHTMLStr(summary.RemoteType)))
+		sb.WriteString("</div>\n")
 
-		sb.WriteString("###### Backups Summary\n\n")
-		sb.WriteString("```text\n")
+		sb.WriteString("<h4>Backups Summary</h4>\n")
+		sb.WriteString("<div class=\"mono-block\">")
 		sb.WriteString(fmt.Sprintf("Successful Backups        : %d\n", summary.Successful))
 		sb.WriteString(fmt.Sprintf("Failed Backups            : %d\n", summary.Failed))
-		sb.WriteString("```\n\n")
+		sb.WriteString("</div>\n")
 
 		if summary.Failed > 0 && len(summary.FailedBackups) > 0 {
-			sb.WriteString("###### Failed Backups Details\n\n")
+			sb.WriteString("<h4>Failed Backups Details</h4>\n")
 			for j, fb := range summary.FailedBackups {
-				sb.WriteString(fmt.Sprintf("**Failure %d**\n\n", j+1))
-				sb.WriteString("```text\n")
-				sb.WriteString(fmt.Sprintf("Backup Time    : %s\n", fb.BackupTime))
+				sb.WriteString(fmt.Sprintf("<p><strong>Failure %d</strong></p>\n", j+1))
+				sb.WriteString("<div class=\"mono-block\">")
+				sb.WriteString(fmt.Sprintf("Backup Time    : %s\n", escapeHTMLStr(fb.BackupTime)))
 				sb.WriteString(fmt.Sprintf("Failed Nodes   : %d\n", len(fb.FailedNodes)))
 				for _, nodeID := range fb.FailedNodes {
-					sb.WriteString(fmt.Sprintf("                 %s\n", nodeID))
+					sb.WriteString(fmt.Sprintf("                 %s\n", escapeHTMLStr(nodeID)))
 				}
-				sb.WriteString("```\n\n")
+				sb.WriteString("</div>\n")
 
-				// Render errors as blockquotes so they display in red
 				uniqueErrors := deduplicateErrors(fb.FailureMessages)
 				for _, msg := range uniqueErrors {
-					sb.WriteString(fmt.Sprintf("> %s\n\n", msg))
+					sb.WriteString(fmt.Sprintf("<div class=\"error-block\">%s</div>\n", escapeHTMLStr(msg)))
 				}
 			}
 		}
@@ -302,43 +289,54 @@ func buildBackupsSection(org, clusterType, clusterName string) string {
 	return sb.String()
 }
 
-// buildSecuritySection fetches security events for a given eventType and renders
-// a markdown string for the security section of the report.
+// buildSecuritySection returns an HTML string for the security section.
 func buildSecuritySection(org, clusterType, clusterName, eventType, from, to string, loc *time.Location, nodeIdentifiers map[string]string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("##### %s\n\n", strings.Title(eventType)))
+	title := strings.ToUpper(eventType[:1]) + eventType[1:]
+	sb.WriteString(fmt.Sprintf("<h3>%s</h3>\n", title))
 
 	eventsResp, err := metrics.GetEvents(org, clusterType, clusterName, eventType, from, to)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting %s events: %v\n", eventType, err)
-		sb.WriteString(fmt.Sprintf("No Failed %ss during this period.\n\n", strings.Title(eventType)))
+		sb.WriteString(fmt.Sprintf("<p>No Failed %ss during this period.</p>\n", title))
 		return sb.String()
 	}
 
 	if len(eventsResp.Data) == 0 {
-		sb.WriteString(fmt.Sprintf("No Failed %ss during this period.\n\n", strings.Title(eventType)))
+		sb.WriteString(fmt.Sprintf("<p>No Failed %ss during this period.</p>\n", title))
 		return sb.String()
 	}
 
-	sb.WriteString(fmt.Sprintf("**%d event(s) found.**\n\n", len(eventsResp.Data)))
+	sb.WriteString(fmt.Sprintf("<p><strong>%d event(s) found.</strong></p>\n", len(eventsResp.Data)))
 
 	for i, event := range eventsResp.Data {
 		eventTime := time.Unix(event.Time/1000, (event.Time%1000)*int64(time.Millisecond)).In(loc)
-		sb.WriteString(fmt.Sprintf("###### Event %d\n\n", i+1))
-		sb.WriteString("```text\n")
+		sb.WriteString(fmt.Sprintf("<h4>Event %d</h4>\n", i+1))
+		sb.WriteString("<div class=\"mono-block\">")
 		sb.WriteString(fmt.Sprintf("Time       : %s\n", eventTime.Format("2006-01-02 15:04:05")))
-		sb.WriteString(fmt.Sprintf("Type       : %s\n", event.Type))
-		sb.WriteString(fmt.Sprintf("Source     : %s\n", event.Source))
+		sb.WriteString(fmt.Sprintf("Type       : %s\n", escapeHTMLStr(event.Type)))
+		sb.WriteString(fmt.Sprintf("Source     : %s\n", escapeHTMLStr(event.Source)))
 		host := event.HostID
 		if id, ok := nodeIdentifiers[event.HostID]; ok && id != "" {
 			host = id
 		}
-		sb.WriteString(fmt.Sprintf("Host       : %s\n", host))
-		sb.WriteString(fmt.Sprintf("Message    : %s\n", event.Message))
-		sb.WriteString("```\n\n")
+		sb.WriteString(fmt.Sprintf("Host       : %s\n", escapeHTMLStr(host)))
+		sb.WriteString(fmt.Sprintf("Message    : %s\n", escapeHTMLStr(event.Message)))
+		sb.WriteString("</div>\n")
 	}
 
 	return sb.String()
+}
+
+// escapeHTMLStr is a local alias — reporting.go can't import from converter directly
+// for this helper, so we duplicate the five-char escaping here.
+func escapeHTMLStr(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, `"`, "&quot;")
+	s = strings.ReplaceAll(s, "'", "&#39;")
+	return s
 }
 
 func deduplicateErrors(messages []string) []string {
@@ -391,4 +389,23 @@ func detectImageFormat(data []byte) string {
 		return "webp"
 	}
 	return "unknown"
+}
+
+// TableTest renders templates/table-test.html to a PDF via WeasyPrint and streams it back.
+func TableTest(c *gin.Context) {
+	outputPath := filepath.Join(os.TempDir(), uuid.New().String()+".pdf")
+	err := converter.HTMLToPDF("templates/table-test.html", outputPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating PDF: %v\n", err)
+		utils.ReturnError(c, err)
+		return
+	}
+	defer os.Remove(outputPath)
+
+	// Serve PDF
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(outputPath)))
+	c.Header("Content-Type", "application/pdf")
+	c.File(outputPath)
+
+	fmt.Printf("PDF generated successfully at %s\n", outputPath)
 }

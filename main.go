@@ -62,6 +62,8 @@ func setupRoutes(r *gin.Engine) {
 	// v1.Use(authenticationCheck)
 
 	v1.GET("/reporting", apiv1.GeneratePDF)
+	v1.GET("/reports/table-test", apiv1.TableTest)
+
 	// test endpoints:
 	v1.GET("/authcheck", apiv1.AuthCheck) // Authenticated dummy endpoint
 	v1.GET("/clusters", apiv1.GetOrgClusters)
