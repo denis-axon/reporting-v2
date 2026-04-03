@@ -6,112 +6,331 @@
   <style>
     @page {
       size: A4;
-      margin: 1.8cm 1.8cm 2cm 1.8cm;
+      margin: 1.5cm 1.8cm 2cm 1.8cm;
     }
+
+    * { box-sizing: border-box; }
 
     body {
       font-family: Helvetica, Arial, sans-serif;
       font-size: 11px;
-      color: #222;
+      color: #333;
       background: #fff;
       margin: 0;
       padding: 0;
     }
 
-    /* ── Header / Logo ─────────────────────────── */
+    .page-card {
+      border: none;
+      border-radius: 0;
+      padding: 28px 32px 24px 32px;
+    }
+
+    /* ── Header ─────────────────────────────────── */
     .report-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;  /* title left, logo right */
-      margin-bottom: 20px;
-      border-bottom: 2px solid #2c3e50;
-      padding-bottom: 10px;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .report-header .title-block h1 {
+      font-size: 22px;
+      font-weight: bold;
+      color: #1a1a2e;
+      margin: 0 0 4px 0;
+    }
+    .report-header .title-block .subtitle {
+      font-size: 10px;
+      color: #888;
+      margin: 0;
     }
     .report-header img.logo {
-      height: 48px;
+      height: 44px;
       width: auto;
-      margin-left: 16px;   /* was margin-right */
       flex-shrink: 0;
-    }
-    .report-header h1 {
-      font-size: 18px;
-      font-weight: normal;
-      color: #2c3e50;
-      margin: 0;
+      margin-top: -12px;
     }
 
     /* ── Section headings ──────────────────────── */
-    h2 {
-      font-size: 14px;
+    .section-heading {
+      font-size: 10px;
       font-weight: bold;
-      color: #2c3e50;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 4px;
-      margin-top: 24px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-    }
-    h3 {
-      font-size: 12px;
-      font-weight: bold;
-      color: #444;
-      margin-top: 16px;
-      margin-bottom: 6px;
-    }
-    h4 {
-      font-size: 11px;
-      font-weight: bold;
+      letter-spacing: 0.08em;
       color: #555;
-      margin-top: 12px;
-      margin-bottom: 4px;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid #2c3e50;
+      padding-bottom: 5px;
+      margin-top: 22px;
+      margin-bottom: 12px;
+      page-break-after: avoid;
     }
 
-    /* ── Info tables ───────────────────────────── */
-    table.info {
+    /* ── Two-column info grid ──────────────────── */
+    .info-grid {
+      display: table;
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 12px;
     }
-    table.info td {
-      padding: 4px 8px;
+    .info-row {
+      display: table-row;
+    }
+    .info-row:nth-child(even) .info-cell {
+      background: #f9f9f9;
+    }
+    .info-cell {
+      display: table-cell;
+      width: 25%;
+      padding: 5px 8px;
       vertical-align: top;
     }
-    table.info td.label {
-      width: 38%;
-      color: #555;
-      font-weight: bold;
+    .info-cell.label {
+      font-size: 10px;
+      color: #888;
+      font-weight: normal;
     }
-    table.info td.value {
+    .info-cell.value {
+      font-size: 10px;
+      /* font-weight: bold; */
       color: #222;
     }
-    table.info tr:nth-child(even) {
-      background-color: #f7f7f7;
+
+    /* ── Backup card ───────────────────────────── */
+    .backup-card {
+      border-radius: 6px;
+      margin-bottom: 16px;
+      overflow: hidden;
     }
 
-    /* ── Backup / security blocks ──────────────── */
-    .mono-block {
-      font-family: Courier, monospace;
+    /* Card header + stats kept together */
+    .backup-card-top {
+      page-break-inside: avoid;
+    }
+
+    /* Card header row */
+    .backup-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      background: #fff;
+      border-bottom: none;
+    }
+
+    .schedule-title {
+      font-size: 13px;
+      font-weight: 400;
+      color: #1a1a2e;
+      margin: 0 0 3px 0;
+    }
+    .schedule-meta {
+      font-size: 9.5px;
+      color: #888;
+      margin: 0;
+      background: #f4f5f7;
+    }
+    .badge-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .badge {
+      font-size: 9px;
+      font-weight: bold;
+      padding: 3px 9px;
+      border-radius: 4px;
+      white-space: nowrap;
+      border: none;
+      letter-spacing: 0.03em;
+    }
+    .badge-healthy  { background: #e8f5e9; color: #2e7d32; }
+    .badge-warning  { background: #fff3e0; color: #e65100; }
+    .badge-schedule { background: #f0f0f0; color: #555;    }
+
+    /* Stats body — two cells side by side */
+    .backup-card-body {
+      display: table;
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #e8edf1;
+      border-radius: 6px;
+      background: #f9fafc;
+    }
+    .backup-stats-row {
+      display: table-row;
+    }
+    .backup-stats-cell {
+      display: table-cell;
+      width: 50%;
+      padding: 14px 18px;
+      vertical-align: middle;
+      border-right: 1px solid #e8edf1;
+    }
+    .backup-stats-cell:last-child {
+      border-right: none;
+    }
+
+    /* Left cell: horizontal label + right-aligned value rows */
+    .stat-inline-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .stat-inline-row:last-child {
+      margin-bottom: 0;
+    }
+    .stat-inline-label {
       font-size: 10px;
-      background: #f4f4f4;
-      border-left: 3px solid #aaa;
-      padding: 6px 10px;
-      margin: 6px 0 10px 0;
-      white-space: pre-wrap;
+      color: #888;
+      font-weight: normal;
+      margin-bottom: 0;
+    }
+    .stat-inline-value {
+      font-size: 10px;
+      color: #222;
+      margin-top: 0;
+      text-align: right;
+    }
+
+    /* Right cell: horizontal label + right-aligned coloured numbers */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .stat-row:last-child {
+      margin-bottom: 0;
+    }
+    .stat-label {
+      font-size: 9px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: normal;
+      margin-bottom: 0;
+    }
+    .stat-value {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 0;
+      line-height: 1.2;
+      text-align: right;
+    }
+    .stat-value.success { color: #2e7d32; }
+    .stat-value.failure { color: #c62828; }
+
+    /* Failed backups section — inside the card */
+    .failed-section-heading {
+      font-size: 9px;
+      font-weight: bold;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #888;
+      padding: 8px 0 5px 0;
+      background: #fff;
+      page-break-after: avoid;
+      margin-top: 12px;
+    }
+
+    /* Grey detail block — each entry stays on one page */
+   .failed-detail-block {
+      background: #f9fafc;
+      border-left: 3px solid #e53935;
+      border-radius: 0 4px 4px 0;
+      margin: 4px 0 10px 0;
+      padding: 10px 12px;
+      font-size: 10px;
+      page-break-inside: avoid;
+    }
+    .detail-row {
+      display: flex;
+      margin-bottom: 4px;
+    }
+    .detail-label {
+      width: 120px;
+      color: #888;
+      flex-shrink: 0;
+      font-size: 10px;
+    }
+    .detail-value {
+      color: #222;
+      font-size: 10px;
+    }
+    .node-id {
+      font-family: Courier, monospace;
+      font-size: 9px;
+      color: #555;
+      padding-left: 120px;
+      margin-bottom: 4px;
+    }
+
+    /* Error row — inside grey block */
+    .error-row {
+      display: flex;
+      align-items: center;
+      margin-top: 8px;
+      padding: 5px 8px;
+      background: #fff0f0;
+      border-left: none;
+      border-radius: 0 3px 3px 0;
+    }
+    .error-dot {
+      width: 14px;
+      height: 14px;
+      min-width: 14px;
+      flex-shrink: 0;
+      margin-right: 7px;
+      margin-top: 1px;
+    }
+    .error-text {
+      font-size: 9.5px;
+      color: #c62828;
       word-break: break-all;
     }
-    .error-block {
-      font-size: 10px;
-      color: #c00;
-      border-left: 3px solid #c00;
-      padding: 4px 8px;
-      margin: 4px 0 8px 0;
-      background: #fff5f5;
+
+    /* ── Security section ──────────────────────── */
+    .security-event-block {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      padding: 6px 0;
+      page-break-inside: avoid;
     }
+    .sec-icon {
+      width: 26px;
+      flex-shrink: 0;
+      margin-right: 8px;
+      margin-top: 1px;
+    }
+    .sec-type {
+      font-size: 9px;
+      font-weight: bold;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 3px;
+    }
+    .sec-text {
+      font-size: 10px;
+      color: #444;
+    }
+    .sec-event-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      margin-top: 4px;
+    }
+    .sec-event-table td { padding: 3px 6px; vertical-align: top; }
+    .sec-event-table td.el { color: #888; width: 80px; }
+    .sec-event-table td.ev { color: #222; }
+    .sec-event-table tr:nth-child(even) td { background: #f9f9f9; }
 
     /* ── Charts ────────────────────────────────── */
     .chart-container {
-      margin: 14px 0;
+      margin: 12px 0;
       page-break-inside: avoid;
     }
     .chart-container img {
@@ -120,89 +339,120 @@
       display: block;
     }
 
-    /* ── Page break helpers ────────────────────── */
-    .page-break {
-      page-break-after: always;
-    }
+    /* ── Page break ────────────────────────────── */
+    .page-break { page-break-after: always; }
 
     /* ── Footer ────────────────────────────────── */
-    .footer {
-      margin-top: 20px;
-      font-size: 9px;
+    .report-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #e0e0e0;
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      font-size: 8px;
       color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .footer-left img {
+      height: 18px;
+      width: auto;
+      margin-right: 8px;
+      opacity: 0.4;
+    }
+    .footer-right {
       text-align: right;
+      font-size: 8px;
+      color: #aaa;
+    }
+    .footer-right .doc-id     { margin-bottom: 2px; }
+    .footer-right .classification {
+      font-weight: bold;
+      letter-spacing: 0.04em;
     }
   </style>
 </head>
 <body>
+<div class="page-card">
 
   <!-- Header -->
   <div class="report-header">
+    <div class="title-block">
       <h1>Cluster Utilization Report</h1>
-      {{LOGO}}
+      <p class="subtitle">Technical Audit Ledger</p>
+    </div>
+    {{LOGO}}
   </div>
 
-  <!-- Report metadata -->
-  <h2>
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
-      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
-    Report Information
-  </h2>
-  <table class="info">
-    <tr><td class="label">Organization</td><td class="value">{{ORGANIZATION}}</td></tr>
-    <tr><td class="label">Dashboard</td><td class="value">{{DASHBOARD}}</td></tr>
-    <tr><td class="label">Date From</td><td class="value">{{DATE_FROM}}</td></tr>
-    <tr><td class="label">Date To</td><td class="value">{{DATE_TO}}</td></tr>
-    <tr><td class="label">Timezone</td><td class="value">{{TIMEZONE}}</td></tr>
-    <tr><td class="label">Generated At</td><td class="value">{{GENERATED_AT}}</td></tr>
-  </table>
+  <!-- Report Information -->
+  <div class="section-heading">Report Information</div>
+  <div class="info-grid">
+    <div class="info-row">
+      <div class="info-cell label">Organization</div>
+      <div class="info-cell value">{{ORGANIZATION}}</div>
+      <div class="info-cell label">Dashboard</div>
+      <div class="info-cell value">{{DASHBOARD}}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell label">Date From</div>
+      <div class="info-cell value">{{DATE_FROM}}</div>
+      <div class="info-cell label">Date To</div>
+      <div class="info-cell value">{{DATE_TO}}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell label">Timezone</div>
+      <div class="info-cell value">{{TIMEZONE}}</div>
+      <div class="info-cell label">Generated At</div>
+      <div class="info-cell value">{{GENERATED_AT}}</div>
+    </div>
+  </div>
 
-  <!-- Cluster info -->
-  <h2>
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
-      <rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
-    </svg>
-    Cluster Information
-  </h2>
-  <table class="info">
-    <tr><td class="label">Type</td><td class="value">{{CLUSTER_TYPE}}</td></tr>
-    <tr><td class="label">Name</td><td class="value">{{CLUSTER_NAME}}</td></tr>
-    <tr><td class="label">Node Count</td><td class="value">{{NODE_COUNT}}</td></tr>
-    <tr><td class="label">Data Centers</td><td class="value">{{DATA_CENTERS}}</td></tr>
-    <tr><td class="label">Apache Cassandra Version</td><td class="value">{{CASSANDRA_VERSION}}</td></tr>
-    <tr><td class="label">OS Version</td><td class="value">{{OS_VERSION}}</td></tr>
-    <tr><td class="label">Java Version</td><td class="value">{{JAVA_VERSION}}</td></tr>
-  </table>
+  <!-- Cluster Information -->
+  <div class="section-heading">Cluster Information</div>
+  <div class="info-grid">
+    <div class="info-row">
+      <div class="info-cell label">Type</div>
+      <div class="info-cell value">{{CLUSTER_TYPE}}</div>
+      <div class="info-cell label">Name</div>
+      <div class="info-cell value">{{CLUSTER_NAME}}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell label">Node Count</div>
+      <div class="info-cell value">{{NODE_COUNT}}</div>
+      <div class="info-cell label">Data Centers</div>
+      <div class="info-cell value">{{DATA_CENTERS}}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell label">Apache Cassandra Version</div>
+      <div class="info-cell value">{{CASSANDRA_VERSION}}</div>
+      <div class="info-cell label">OS Version</div>
+      <div class="info-cell value">{{OS_VERSION}}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-cell label">Java Version</div>
+      <div class="info-cell value">{{JAVA_VERSION}}</div>
+      <div class="info-cell label"></div>
+      <div class="info-cell value"></div>
+    </div>
+  </div>
 
   <!-- Backups -->
-  <h2>
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
-      <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
-    </svg>
-    Backups
-  </h2>
+  <div class="section-heading">Backups</div>
   {{BACKUPS_SECTION}}
 
   <!-- Security -->
-  <h2>
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    </svg>
-    Security
-  </h2>
+  <div class="section-heading">Security &amp; Compliance</div>
   {{SECURITY_SECTION}}
 
   <div class="page-break"></div>
 
   <!-- Utilization charts -->
-  <h2>
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
-      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
-    </svg>
-    Utilization
-  </h2>
-
+  <div class="section-heading">Utilization</div>
   <div class="chart-container">{{CHART_DISK_USAGE}}</div>
   <div class="chart-container">{{CHART_DISK_READ}}</div>
   <div class="chart-container">{{CHART_CPU}}</div>
@@ -210,13 +460,7 @@
   <div class="chart-container">{{CHART_DISK_ALL_USAGE}}</div>
 
   <!-- Coordinator charts -->
-  <h2>
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
-      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-    </svg>
-    Coordinator
-  </h2>
-
+  <div class="section-heading">Coordinator</div>
   <div class="chart-container">{{CHART_COORDINATOR_READS}}</div>
   <div class="chart-container">{{CHART_COORDINATOR_WRITES}}</div>
   <div class="chart-container">{{CHART_COORDINATOR_READ_THROUGHPUT}}</div>
@@ -224,7 +468,18 @@
   <div class="chart-container">{{CHART_COORDINATOR_READ_LATENCY}}</div>
   <div class="chart-container">{{CHART_COORDINATOR_WRITE_LATENCY}}</div>
 
-  <div class="footer">Generated by reporting-v2</div>
+  <!-- Footer -->
+  <div class="report-footer">
+    <div class="footer-left">
+      {{FOOTER_LOGO}}
+      AxonOps Technical Audit System
+    </div>
+    <div class="footer-right">
+      <div class="doc-id">DOC_ID: {{GENERATED_AT_DATE}}-CASS-REPORT-001</div>
+      <div class="classification">Sensitive Technical Data &ndash; Internal Only</div>
+    </div>
+  </div>
 
+</div>
 </body>
 </html>

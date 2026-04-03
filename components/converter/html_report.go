@@ -75,6 +75,22 @@ func GenerateHTMLReportPDF(templatePath string, outputPath string, images []Imag
 	}
 	content = strings.Replace(content, "{{LOGO}}", logoTag, 1)
 
+	// ── Footer logo (same image, smaller, desaturated via CSS opacity) ────────
+	footerLogoTag := ""
+	if logoBytes, err := os.ReadFile("templates/logo.png"); err == nil {
+		footerLogoTag = fmt.Sprintf(`<img src="data:image/png;base64,%s" alt="" />`,
+			base64.StdEncoding.EncodeToString(logoBytes))
+	}
+	content = strings.Replace(content, "{{FOOTER_LOGO}}", footerLogoTag, 1)
+
+	// ── Footer date (YYYY-MM-DD only, for the doc ID) ─────────────────────────
+	generatedAtDate := ""
+	if data.GeneratedAt != "" && len(data.GeneratedAt) >= 10 {
+		// GeneratedAt is "2006-01-02 15:04:05" — take first 10 chars and reformat
+		generatedAtDate = strings.ReplaceAll(data.GeneratedAt[:10], "-", "-")
+	}
+	content = strings.Replace(content, "{{GENERATED_AT_DATE}}", escapeHTML(generatedAtDate), 1)
+
 	// ── Chart images (base64 data URIs) ──────────────────────────────────────
 	for _, img := range images {
 		if !strings.Contains(content, img.Placeholder) {

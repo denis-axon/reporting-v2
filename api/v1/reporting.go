@@ -251,80 +251,159 @@ func buildBackupsSection(org, clusterType, clusterName string) string {
 	var sb strings.Builder
 
 	for i, summary := range summaries {
-		sb.WriteString(fmt.Sprintf("<h3>Schedule %d</h3>\n", i+1))
+		// Schedule badge only (shortened label, outlined style)
+		scheduleBadge := ""
+		if summary.ScheduleExpr != "" {
+			scheduleBadge = fmt.Sprintf(`<span class="badge badge-schedule">%s</span>`,
+				escapeHTMLStr(shortenScheduleExpr(strings.ToUpper(summary.ScheduleExpr))))
+		}
 
-		sb.WriteString("<div class=\"mono-block\">")
-		sb.WriteString(fmt.Sprintf("Tag                       : %s\n", escapeHTMLStr(summary.Tag)))
-		sb.WriteString(fmt.Sprintf("Schedule                  : %s\n", escapeHTMLStr(summary.ScheduleExpr)))
-		sb.WriteString(fmt.Sprintf("Data Centers              : %s\n", escapeHTMLStr(summary.Datacenters)))
-		sb.WriteString(fmt.Sprintf("Remote Type               : %s\n", escapeHTMLStr(summary.RemoteType)))
-		sb.WriteString("</div>\n")
+		sb.WriteString(`<div class="backup-card">`)
 
-		sb.WriteString("<h4>Backups Summary</h4>\n")
-		sb.WriteString("<div class=\"mono-block\">")
-		sb.WriteString(fmt.Sprintf("Successful Backups        : %d\n", summary.Successful))
-		sb.WriteString(fmt.Sprintf("Failed Backups            : %d\n", summary.Failed))
-		sb.WriteString("</div>\n")
+		// ── Card top: header + stats kept together on one page ───────────────
+		sb.WriteString(`<div class="backup-card-top">`)
 
+		// ── Card header ──────────────────────────────────────────────────────
+		sb.WriteString(`<div class="backup-card-header">`)
+		sb.WriteString(`<div>`)
+		sb.WriteString(fmt.Sprintf(`<div class="schedule-title">Schedule %d: %s</div>`, i+1, escapeHTMLStr(summary.Tag)))
+		sb.WriteString(`</div>`)
+		sb.WriteString(`<div style="display:flex;gap:6px;align-items:center;">`)
+		sb.WriteString(scheduleBadge)
+		sb.WriteString(`</div>`)
+		sb.WriteString(`</div>`) // backup-card-header
+
+		// ── Stats body ───────────────────────────────────────────────────────
+		sb.WriteString(`<div class="backup-card-body">`)
+		sb.WriteString(`<div class="backup-stats-row">`)
+
+		// Left cell: Tag / Data Centers / Remote Type
+		sb.WriteString(`<div class="backup-stats-cell">`)
+		sb.WriteString(`<div class="stat-inline-row">`)
+		sb.WriteString(`<div class="stat-inline-label">Tag:</div>`)
+		sb.WriteString(fmt.Sprintf(`<div class="stat-inline-value">%s</div>`, escapeHTMLStr(summary.Tag)))
+		sb.WriteString(`</div>`)
+		sb.WriteString(`<div class="stat-inline-row">`)
+		sb.WriteString(`<div class="stat-inline-label">Data Centers:</div>`)
+		sb.WriteString(fmt.Sprintf(`<div class="stat-inline-value">%s</div>`, escapeHTMLStr(summary.Datacenters)))
+		sb.WriteString(`</div>`)
+		sb.WriteString(`<div class="stat-inline-row">`)
+		sb.WriteString(`<div class="stat-inline-label">Remote Type:</div>`)
+		sb.WriteString(fmt.Sprintf(`<div class="stat-inline-value">%s</div>`, escapeHTMLStr(summary.RemoteType)))
+		sb.WriteString(`</div>`)
+		sb.WriteString(`</div>`) // backup-stats-cell left
+
+		// Right cell: counts (each pair wrapped in stat-row for horizontal layout)
+		sb.WriteString(`<div class="backup-stats-cell">`)
+		sb.WriteString(`<div class="stat-row">`)
+		sb.WriteString(`<div class="stat-label">Successful Backups:</div>`)
+		sb.WriteString(fmt.Sprintf(`<div class="stat-value success">%d</div>`, summary.Successful))
+		sb.WriteString(`</div>`)
+		sb.WriteString(`<div class="stat-row">`)
+		sb.WriteString(`<div class="stat-label">Failed Backups:</div>`)
+		sb.WriteString(fmt.Sprintf(`<div class="stat-value failure">%d</div>`, summary.Failed))
+		sb.WriteString(`</div>`)
+		sb.WriteString(`</div>`) // backup-stats-cell right
+
+		sb.WriteString(`</div>`) // backup-stats-row
+		sb.WriteString(`</div>`) // backup-card-body
+
+		sb.WriteString(`</div>`) // backup-card-top
+
+		// ── Failed backup details (each entry avoids page splits) ────────────
 		if summary.Failed > 0 && len(summary.FailedBackups) > 0 {
-			sb.WriteString("<h4>Failed Backups Details</h4>\n")
-			for j, fb := range summary.FailedBackups {
-				sb.WriteString(fmt.Sprintf("<p><strong>Failure %d</strong></p>\n", j+1))
-				sb.WriteString("<div class=\"mono-block\">")
-				sb.WriteString(fmt.Sprintf("Backup Time    : %s\n", escapeHTMLStr(fb.BackupTime)))
-				sb.WriteString(fmt.Sprintf("Failed Nodes   : %d\n", len(fb.FailedNodes)))
-				for _, nodeID := range fb.FailedNodes {
-					sb.WriteString(fmt.Sprintf("                 %s\n", escapeHTMLStr(nodeID)))
-				}
-				sb.WriteString("</div>\n")
+			sb.WriteString(`<div class="failed-section-heading">Failed Backups Details</div>`)
 
+			for j, fb := range summary.FailedBackups {
+				// Each grey block stays on one page — if it doesn't fit, it
+				// moves entirely to the next page.
+				sb.WriteString(`<div class="failed-detail-block">`)
+
+				// Detail rows
+				sb.WriteString(`<div class="detail-row">`)
+				sb.WriteString(`<span class="detail-label">Backup Time :</span>`)
+				sb.WriteString(fmt.Sprintf(`<span class="detail-value">%s</span>`, escapeHTMLStr(fb.BackupTime)))
+				sb.WriteString(`</div>`)
+				sb.WriteString(`<div class="detail-row">`)
+				sb.WriteString(`<span class="detail-label">Failed Nodes :</span>`)
+				sb.WriteString(fmt.Sprintf(`<span class="detail-value">%d</span>`, len(fb.FailedNodes)))
+				sb.WriteString(`</div>`)
+
+				// Node IDs — inside the same grey block
+				for _, nodeID := range fb.FailedNodes {
+					sb.WriteString(fmt.Sprintf(`<div class="node-id">%s</div>`, escapeHTMLStr(nodeID)))
+				}
+
+				// Error rows — inside the same grey block
 				uniqueErrors := deduplicateErrors(fb.FailureMessages)
 				for _, msg := range uniqueErrors {
-					sb.WriteString(fmt.Sprintf("<div class=\"error-block\">%s</div>\n", escapeHTMLStr(msg)))
+					sb.WriteString(`<div class="error-row">`)
+					sb.WriteString(`<svg class="error-dot" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">` +
+						`<circle cx="7" cy="7" r="7" fill="#e53935"/>` +
+						`<text x="7" y="10.5" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" ` +
+						`font-size="9" font-weight="bold" fill="#ffffff">!</text>` +
+						`</svg>`)
+
+					sb.WriteString(fmt.Sprintf(`<div class="error-text">%s</div>`, escapeHTMLStr(msg)))
+					sb.WriteString(`</div>`)
 				}
+
+				sb.WriteString(`</div>`) // close failed-detail-block
+				_ = j
 			}
 		}
+
+		sb.WriteString(`</div>`) // backup-card
 	}
 
 	return sb.String()
 }
 
-// buildSecuritySection returns an HTML string for the security section.
 func buildSecuritySection(org, clusterType, clusterName, eventType, from, to string, loc *time.Location, nodeIdentifiers map[string]string) string {
 	var sb strings.Builder
 	title := strings.ToUpper(eventType[:1]) + eventType[1:]
-	sb.WriteString(fmt.Sprintf("<h3>%s</h3>\n", title))
+	titleUpper := strings.ToUpper(eventType)
+
+	// Choose icon colour: green tick for auth types
+	iconColor := "#43a047"
+	iconPath := `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="` + iconColor + `" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`
+	if eventType == "authorization" {
+		iconPath = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb8c00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
+	}
 
 	eventsResp, err := metrics.GetEvents(org, clusterType, clusterName, eventType, from, to)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting %s events: %v\n", eventType, err)
-		sb.WriteString(fmt.Sprintf("<p>No Failed %ss during this period.</p>\n", title))
+	hasError := err != nil || len(eventsResp.Data) == 0
+
+	sb.WriteString(`<div class="security-event-block">`)
+	sb.WriteString(fmt.Sprintf(`<div class="sec-icon">%s</div>`, iconPath))
+	sb.WriteString(`<div class="sec-content">`)
+	sb.WriteString(fmt.Sprintf(`<div class="sec-type">%s</div>`, titleUpper))
+
+	if hasError || len(eventsResp.Data) == 0 {
+		sb.WriteString(fmt.Sprintf(`<div class="sec-text">No failed %ss during this period.</div>`, title))
+		sb.WriteString(`</div></div>`)
 		return sb.String()
 	}
 
-	if len(eventsResp.Data) == 0 {
-		sb.WriteString(fmt.Sprintf("<p>No Failed %ss during this period.</p>\n", title))
-		return sb.String()
-	}
-
-	sb.WriteString(fmt.Sprintf("<p><strong>%d event(s) found.</strong></p>\n", len(eventsResp.Data)))
+	sb.WriteString(fmt.Sprintf(`<div class="sec-text"><strong>%d event(s) found.</strong></div>`, len(eventsResp.Data)))
 
 	for i, event := range eventsResp.Data {
 		eventTime := time.Unix(event.Time/1000, (event.Time%1000)*int64(time.Millisecond)).In(loc)
-		sb.WriteString(fmt.Sprintf("<h4>Event %d</h4>\n", i+1))
-		sb.WriteString("<div class=\"mono-block\">")
-		sb.WriteString(fmt.Sprintf("Time       : %s\n", eventTime.Format("2006-01-02 15:04:05")))
-		sb.WriteString(fmt.Sprintf("Type       : %s\n", escapeHTMLStr(event.Type)))
-		sb.WriteString(fmt.Sprintf("Source     : %s\n", escapeHTMLStr(event.Source)))
 		host := event.HostID
 		if id, ok := nodeIdentifiers[event.HostID]; ok && id != "" {
 			host = id
 		}
-		sb.WriteString(fmt.Sprintf("Host       : %s\n", escapeHTMLStr(host)))
-		sb.WriteString(fmt.Sprintf("Message    : %s\n", escapeHTMLStr(event.Message)))
-		sb.WriteString("</div>\n")
+		sb.WriteString(fmt.Sprintf(`<div style="margin-top:6px;font-size:9px;color:#888;">Event %d</div>`, i+1))
+		sb.WriteString(`<table class="sec-event-table">`)
+		sb.WriteString(fmt.Sprintf(`<tr><td class="el">Time</td><td class="ev">%s</td></tr>`, eventTime.Format("2006-01-02 15:04:05")))
+		sb.WriteString(fmt.Sprintf(`<tr><td class="el">Type</td><td class="ev">%s</td></tr>`, escapeHTMLStr(event.Type)))
+		sb.WriteString(fmt.Sprintf(`<tr><td class="el">Source</td><td class="ev">%s</td></tr>`, escapeHTMLStr(event.Source)))
+		sb.WriteString(fmt.Sprintf(`<tr><td class="el">Host</td><td class="ev">%s</td></tr>`, escapeHTMLStr(host)))
+		sb.WriteString(fmt.Sprintf(`<tr><td class="el">Message</td><td class="ev">%s</td></tr>`, escapeHTMLStr(event.Message)))
+		sb.WriteString(`</table>`)
 	}
 
+	sb.WriteString(`</div></div>`)
 	return sb.String()
 }
 
@@ -353,6 +432,16 @@ func deduplicateErrors(messages []string) []string {
 		}
 	}
 	return unique
+}
+
+// shortenScheduleExpr abbreviates schedule expressions for the badge.
+// e.g. "EVERY 15 MINUTES" → "EVERY 15 MIN"
+func shortenScheduleExpr(expr string) string {
+	expr = strings.ReplaceAll(expr, "MINUTES", "MIN")
+	expr = strings.ReplaceAll(expr, "MINUTE", "MIN")
+	expr = strings.ReplaceAll(expr, "HOURS", "HR")
+	expr = strings.ReplaceAll(expr, "HOUR", "HR")
+	return expr
 }
 
 // truncateMessage shortens a message to maxLen characters, appending "..." if truncated.
